@@ -7,7 +7,7 @@ build_variant() {
     local name=$1 base=$2 nvidia=$3 desktop=$4
     local image="bootc-${name}"
     echo "Building ${name} (Fedora ${FEDORA_MAJOR_VERSION}, nvidia=${nvidia}, desktop=${desktop})..."
-    sudo podman build \
+    podman build \
         --build-arg "FEDORA_MAJOR_VERSION=${FEDORA_MAJOR_VERSION}" \
         --build-arg "BASE_IMAGE=${base}" \
         --build-arg "IMAGE_NAME=${name}" \
