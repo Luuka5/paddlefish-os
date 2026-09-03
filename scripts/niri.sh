@@ -5,7 +5,7 @@ dnf5 copr enable -y yalter/niri
 
 dnf5 install -y \
     niri \
-    alacritty \
+    foot \
     fuzzel \
     xdg-desktop-portal-gnome \
     xwayland-satellite

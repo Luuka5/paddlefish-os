@@ -17,6 +17,8 @@ RUN /tmp/scripts/base.sh
 
 RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/niri.sh; fi
 
+RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/gui-apps.sh; fi
+
 RUN --mount=type=bind,from=akmods_nvidia,src=/rpms,dst=/tmp/akmods-nv-rpms \
     if [ "${BUILD_NVIDIA}" = "Y" ]; then /tmp/scripts/nvidia-repo.sh; fi
 
