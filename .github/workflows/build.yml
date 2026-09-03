@@ -85,7 +85,7 @@ jobs:
       - name: Pull container image
         run: |
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          podman pull "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
+          sudo podman pull "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
 
       - name: Build Anaconda ISO
         run: |
