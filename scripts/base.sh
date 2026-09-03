@@ -5,6 +5,7 @@ dnf5 install -y \
     git \
     vim \
     neovim \
+    fish \
     htop \
     curl \
     wget \
@@ -13,3 +14,6 @@ dnf5 install -y \
     buildah
 
 dnf5 clean all
+
+# Set fish as default shell for new users
+useradd -D -s /usr/bin/fish
