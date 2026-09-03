@@ -6,15 +6,6 @@ AKMODNV_PATH=/tmp/akmods-nv-rpms
 # Source version metadata from akmods build
 source "${AKMODNV_PATH}"/kmods/nvidia-vars
 
-# Disable rpmfusion repos if they exist (safety check)
-if dnf5 repolist --all | grep -q rpmfusion; then
-    dnf5 config-manager setopt "rpmfusion*".enabled=0
-fi
-dnf5 config-manager setopt fedora-cisco-openh264.enabled=0
-
-# Install ublue-os-nvidia-addons (provides negativo17 nvidia repos, SELinux policy, systemd presets)
-dnf5 install -y "${AKMODNV_PATH}"/ublue-os/ublue-os-nvidia-addons-*.rpm
-
 # Install multilib mesa packages from negativo17-multimedia before enabling nvidia repo
 if [[ "$(rpm -E '%{_arch}')" == "x86_64" ]]; then
     dnf5 install -y \
@@ -25,9 +16,6 @@ if [[ "$(rpm -E '%{_arch}')" == "x86_64" ]]; then
         mesa-libgbm.i686 \
         mesa-vulkan-drivers.i686
 fi
-
-# Enable negativo17 nvidia repos (installed by ublue-os-nvidia-addons, disabled by default)
-dnf5 config-manager setopt fedora-nvidia*.enabled=1 nvidia-container-toolkit.enabled=1
 
 # Disable negativo17 multimedia to avoid conflicts during nvidia install
 NEGATIVO17_MULT_PREV_ENABLED=N
@@ -83,7 +71,7 @@ sed -i 's@omit_drivers@force_drivers@g' /usr/lib/dracut/dracut.conf.d/99-nvidia.
 sed -i 's@ nvidia @ i915 amdgpu nvidia @g' /usr/lib/dracut/dracut.conf.d/99-nvidia.conf
 
 # Regenerate initramfs
-QUALIFIED_KERNEL="$(rpm -qa | grep -P 'kernel-(|.*-)(\d+\.\d+\.\d+)' | sed -E 's/kernel-(|.*-)//' | head -1)"
+QUALIFIED_KERNEL="$(rpm -q --queryformat="%{evr}.%{arch}" kernel-core)"
 export DRACUT_NO_XATTR=1
 /usr/bin/dracut --no-hostonly --kver "$QUALIFIED_KERNEL" --reproducible -v --add ostree -f "/lib/modules/$QUALIFIED_KERNEL/initramfs.img"
 chmod 0600 "/lib/modules/$QUALIFIED_KERNEL/initramfs.img"

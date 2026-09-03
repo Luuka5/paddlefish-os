@@ -3,30 +3,39 @@ set -euo pipefail
 
 FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-44}"
 
-VARIANTS=("desktop" "laptop" "server")
-
 build_variant() {
-    local variant=$1
-    local image="bootc-${variant}"
-    echo "Building ${variant} (Fedora ${FEDORA_MAJOR_VERSION})..."
+    local name=$1 base=$2 nvidia=$3 desktop=$4
+    local image="bootc-${name}"
+    echo "Building ${name} (Fedora ${FEDORA_MAJOR_VERSION}, nvidia=${nvidia}, desktop=${desktop})..."
     sudo podman build \
         --build-arg "FEDORA_MAJOR_VERSION=${FEDORA_MAJOR_VERSION}" \
-        -f "Containerfile.${variant}" \
+        --build-arg "BASE_IMAGE=${base}" \
+        --build-arg "IMAGE_NAME=${name}" \
+        --build-arg "BUILD_NVIDIA=${nvidia}" \
+        --build-arg "BUILD_DESKTOP=${desktop}" \
+        -f Containerfile \
         -t "${image}:latest" \
         .
     echo "Built ${image}:latest"
 }
 
-if [[ $# -gt 0 ]]; then
-    variant=$1
-    if [[ ! " ${VARIANTS[*]} " =~ " ${variant} " ]]; then
-        echo "Unknown variant: ${variant}"
-        echo "Available: ${VARIANTS[*]}"
+case "${1:-all}" in
+    desktop)
+        build_variant desktop "ghcr.io/ublue-os/base-main:latest" Y Y
+        ;;
+    laptop)
+        build_variant laptop "ghcr.io/ublue-os/base-main:latest" N Y
+        ;;
+    server)
+        build_variant server "quay.io/fedora/fedora-bootc:${FEDORA_MAJOR_VERSION}" N N
+        ;;
+    all)
+        build_variant desktop "ghcr.io/ublue-os/base-main:latest" Y Y
+        build_variant laptop  "ghcr.io/ublue-os/base-main:latest" N Y
+        build_variant server  "quay.io/fedora/fedora-bootc:${FEDORA_MAJOR_VERSION}" N N
+        ;;
+    *)
+        echo "Unknown variant: $1 (available: desktop, laptop, server, all)"
         exit 1
-    fi
-    build_variant "$variant"
-else
-    for variant in "${VARIANTS[@]}"; do
-        build_variant "$variant"
-    done
-fi
+        ;;
+esac
