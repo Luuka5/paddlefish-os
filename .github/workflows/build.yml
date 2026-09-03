@@ -48,6 +48,7 @@ jobs:
 
       - name: Build container image
         run: |
+          IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           podman build \
             --build-arg "FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}" \
             --build-arg "BASE_IMAGE=${{ matrix.base_image }}" \
@@ -55,14 +56,15 @@ jobs:
             --build-arg "BUILD_NVIDIA=${{ matrix.build_nvidia }}" \
             --build-arg "BUILD_DESKTOP=${{ matrix.build_desktop }}" \
             -f Containerfile \
-            -t ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest \
-            -t ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:${{ github.sha }} \
+            -t "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest" \
+            -t "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:${{ github.sha }}" \
             .
 
       - name: Push container image
         run: |
-          podman push ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest
-          podman push ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:${{ github.sha }}
+          IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          podman push "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
+          podman push "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:${{ github.sha }}"
 
   build-isos:
     needs: build-images
@@ -82,10 +84,12 @@ jobs:
 
       - name: Pull container image
         run: |
-          podman pull ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest
+          IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          podman pull "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
 
       - name: Build Anaconda ISO
         run: |
+          IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
           mkdir -p output
           sudo podman run --rm --privileged \
             --security-opt label=type:unconfined_t \
@@ -93,7 +97,7 @@ jobs:
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type anaconda-iso \
-            ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest
+            "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
