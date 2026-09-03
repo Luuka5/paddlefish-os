@@ -5,7 +5,7 @@ FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-44}"
 
 build_variant() {
     local name=$1 base=$2 nvidia=$3 desktop=$4
-    local image="bootc-${name}"
+    local image="paddlefish-os-${name}"
     echo "Building ${name} (Fedora ${FEDORA_MAJOR_VERSION}, nvidia=${nvidia}, desktop=${desktop})..."
     podman build \
         --build-arg "FEDORA_MAJOR_VERSION=${FEDORA_MAJOR_VERSION}" \

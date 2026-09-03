@@ -56,15 +56,15 @@ jobs:
             --build-arg "BUILD_NVIDIA=${{ matrix.build_nvidia }}" \
             --build-arg "BUILD_DESKTOP=${{ matrix.build_desktop }}" \
             -f Containerfile \
-            -t "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest" \
-            -t "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:${{ github.sha }}" \
+            -t "ghcr.io/${IMAGE_OWNER}/paddlefish-os-${{ matrix.variant }}:latest" \
+            -t "ghcr.io/${IMAGE_OWNER}/paddlefish-os-${{ matrix.variant }}:${{ github.sha }}" \
             .
 
       - name: Push container image
         run: |
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          podman push "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
-          podman push "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:${{ github.sha }}"
+          podman push "ghcr.io/${IMAGE_OWNER}/paddlefish-os-${{ matrix.variant }}:latest"
+          podman push "ghcr.io/${IMAGE_OWNER}/paddlefish-os-${{ matrix.variant }}:${{ github.sha }}"
 
   build-isos:
     needs: build-images
@@ -85,7 +85,7 @@ jobs:
       - name: Pull container image
         run: |
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
-          sudo podman pull "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
+          sudo podman pull "ghcr.io/${IMAGE_OWNER}/paddlefish-os-${{ matrix.variant }}:latest"
 
       - name: Build Anaconda ISO
         run: |
@@ -97,11 +97,16 @@ jobs:
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type anaconda-iso \
-            "ghcr.io/${IMAGE_OWNER}/bootc-${{ matrix.variant }}:latest"
+            "ghcr.io/${IMAGE_OWNER}/paddlefish-os-${{ matrix.variant }}:latest"
+          # bootc-image-builder outputs to a subdirectory
+          ISO_SRC=$(find output -name '*.iso' -type f | head -1)
+          if [[ -n "${ISO_SRC}" ]]; then
+            mv "${ISO_SRC}" "output/paddlefish-os-${{ matrix.variant }}.iso"
+          fi
 
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
-          name: bootc-${{ matrix.variant }}-iso
+          name: paddlefish-os-${{ matrix.variant }}-iso
           path: output/*.iso
           retention-days: 30

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 AKMODNV_PATH=/tmp/akmods-nv-rpms
