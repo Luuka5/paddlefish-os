@@ -90,6 +90,7 @@ jobs:
       - name: Build Anaconda ISO
         run: |
           IMAGE_OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          mkdir -p "paddlefish-os-${{ matrix.variant }}-iso"
           sudo podman run --rm --privileged \
             --security-opt label=type:unconfined_t \
             -v ./paddlefish-os-${{ matrix.variant }}-iso:/output \
