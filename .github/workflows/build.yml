@@ -32,7 +32,7 @@ jobs:
             build_nvidia: "N"
             build_desktop: "Y"
           - variant: server
-            base_image: quay.io/fedora/fedora-bootc:${{ env.FEDORA_MAJOR_VERSION }}
+            base_image: quay.io/fedora/fedora-bootc:44
             build_nvidia: "N"
             build_desktop: "N"
     timeout-minutes: 60
