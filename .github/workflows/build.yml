@@ -1,0 +1,103 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FEDORA_MAJOR_VERSION: "44"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: desktop
+            base_image: ghcr.io/ublue-os/base-main:latest
+            build_nvidia: "Y"
+            build_desktop: "Y"
+          - variant: laptop
+            base_image: ghcr.io/ublue-os/base-main:latest
+            build_nvidia: "N"
+            build_desktop: "Y"
+          - variant: server
+            base_image: quay.io/fedora/fedora-bootc:${{ env.FEDORA_MAJOR_VERSION }}
+            build_nvidia: "N"
+            build_desktop: "N"
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build container image
+        run: |
+          podman build \
+            --build-arg "FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}" \
+            --build-arg "BASE_IMAGE=${{ matrix.base_image }}" \
+            --build-arg "IMAGE_NAME=${{ matrix.variant }}" \
+            --build-arg "BUILD_NVIDIA=${{ matrix.build_nvidia }}" \
+            --build-arg "BUILD_DESKTOP=${{ matrix.build_desktop }}" \
+            -f Containerfile \
+            -t ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest \
+            -t ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:${{ github.sha }} \
+            .
+
+      - name: Push container image
+        run: |
+          podman push ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest
+          podman push ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:${{ github.sha }}
+
+  build-isos:
+    needs: build-images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [desktop, laptop]
+    timeout-minutes: 30
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull container image
+        run: |
+          podman pull ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest
+
+      - name: Build Anaconda ISO
+        run: |
+          mkdir -p output
+          sudo podman run --rm --privileged \
+            --security-opt label=type:unconfined_t \
+            -v ./output:/output \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type anaconda-iso \
+            ghcr.io/${{ github.repository_owner }}/bootc-${{ matrix.variant }}:latest
+
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootc-${{ matrix.variant }}-iso
+          path: output/*.iso
+          retention-days: 30
