@@ -9,6 +9,7 @@ FROM ${AKMODS_NVIDIA_IMAGE} AS akmods_nvidia
 
 FROM ${BASE_IMAGE}
 
+COPY system_files/all/ /
 COPY system_files/${IMAGE_NAME}/ /
 COPY scripts/ /tmp/scripts/
 
