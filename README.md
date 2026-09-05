@@ -7,14 +7,14 @@ builds container images; it ships no installer or install media.
 
 | Variant | Base | Contents |
 |---------|------|----------|
-| `desktop` | `ghcr.io/ublue-os/base-main` | niri + foot + firefox, NVIDIA drivers |
-| `laptop` | `ghcr.io/ublue-os/base-main` | niri + foot + firefox (no NVIDIA) |
-| `server` | `quay.io/fedora/fedora-bootc` | headless, minimal tools |
+| `desktop` | `ghcr.io/ublue-os/base-main:latest` | niri + foot + waybar + swaylock + firefox, NVIDIA drivers |
+| `laptop` | `ghcr.io/ublue-os/base-main:latest` | niri + foot + waybar + swaylock + firefox (no NVIDIA) |
+| `server` | `quay.io/fedora/fedora-bootc:44` | headless, minimal tools |
 
 ## Build
 
 ```sh
-./build.sh desktop        # or: laptop | server | all
+./scripts/build.sh desktop        # or: laptop | server | all
 ```
 
 Produces `localhost/paddlefish-os-<variant>:latest`.

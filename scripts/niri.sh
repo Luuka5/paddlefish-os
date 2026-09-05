@@ -7,6 +7,10 @@ dnf5 install -y \
     niri \
     foot \
     fuzzel \
+    waybar \
+    swaylock \
+    playerctl \
+    brightnessctl \
     xdg-desktop-portal-gnome \
     xwayland-satellite
 
