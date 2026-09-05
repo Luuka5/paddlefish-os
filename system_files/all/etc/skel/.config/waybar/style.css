@@ -47,7 +47,8 @@ window#waybar {
 #idle_inhibitor,
 #language,
 #tray,
-#window {
+#window,
+#custom-power {
     padding: 0 5px;
 }
 

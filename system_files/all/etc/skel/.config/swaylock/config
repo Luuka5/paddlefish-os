@@ -15,11 +15,9 @@ ring-wrong-color=ef2f27
 key-hl-color=fce8c3
 bs-hl-color=ef2f27
 
-text-color=fce8c3
-text-clear-color=fce8c3
-text-ver-color=fce8c3
-text-wrong-color=fce8c3
-
-screenshots
+text-color=1c1b19
+text-clear-color=1c1b19
+text-ver-color=1c1b19
+text-wrong-color=1c1b19
 
 font=monospace:size=14

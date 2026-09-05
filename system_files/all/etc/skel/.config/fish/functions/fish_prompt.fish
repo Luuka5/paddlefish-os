@@ -5,7 +5,7 @@ function fish_prompt --description 'Write out the prompt'
     # Srcery Exact Palette Mapping
     set -l cwd_color (set_color 2c78bf)       # Blue (regular4)
     set -l vcs_color (set_color fbb829)       # Yellow (regular3)
-    set -l suffix_color (set_color ef2f27)    # Red (regular1)
+    set -l suffix_color (set_color fce8c3)    # White (foreground)
     set -l error_color (set_color f75341)     # Bright Red (bright1)
     set -l prompt_status ""
 

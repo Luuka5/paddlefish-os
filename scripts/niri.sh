@@ -9,6 +9,8 @@ dnf5 install -y \
     fuzzel \
     waybar \
     swaylock \
+    pavucontrol \
+    network-manager-applet \
     playerctl \
     brightnessctl \
     xdg-desktop-portal-gnome \

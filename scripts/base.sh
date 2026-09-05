@@ -13,7 +13,8 @@ dnf5 install -y \
     podman \
     buildah \
     sudo \
-    util-linux-user
+    util-linux-user \
+    fastfetch
 
 dnf5 clean all
 
