@@ -12,7 +12,8 @@ dnf5 install -y \
     unzip \
     podman \
     buildah \
-    sudo
+    sudo \
+    util-linux-user
 
 dnf5 clean all
 

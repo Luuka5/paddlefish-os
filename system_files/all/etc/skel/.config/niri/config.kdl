@@ -106,6 +106,11 @@ input {
     position x=1280 y=0
 }
 
+// Srcery background color.
+background {
+    color "#1c1b19"
+}
+
 // Settings that influence how windows are positioned and sized.
 // Find more information on the wiki:
 // https://niri-wm.github.io/niri/Configuration:-Layout
@@ -167,13 +172,13 @@ layout {
         // - CSS-like notation: "rgb(255, 127, 0)", rgba(), hsl() and a few others.
 
         // Color of the ring on the active monitor.
-        active-color "#7fc8ff"
+        active-color "#519f50"
 
         // Color of the ring on inactive monitors.
         //
         // The focus ring only draws around the active window, so the only place
         // where you can see its inactive-color is on other monitors.
-        inactive-color "#505050"
+        inactive-color "#918175"
 
         // You can also use gradients. They take precedence over solid colors.
         // Gradients are rendered the same as CSS linear-gradient(angle, from, to).
@@ -198,11 +203,11 @@ layout {
         off
 
         width 4
-        active-color "#ffc87f"
-        inactive-color "#505050"
+        active-color "#519f50"
+        inactive-color "#918175"
 
         // Color of the border around windows that request your attention.
-        urgent-color "#9b0000"
+        urgent-color "#ef2f27"
 
         // Gradients can use a few different interpolation color spaces.
         // For example, this is a pastel rainbow gradient via in="oklch longer hue".
@@ -283,7 +288,7 @@ hotkey-overlay {
 // Additionally, clients will be informed that they are tiled, removing some client-side rounded corners.
 // This option will also fix border/focus ring drawing behind some semitransparent windows.
 // After enabling or disabling this, you need to restart the apps for this to take effect.
-// prefer-no-csd
+prefer-no-csd
 
 // You can change the path where screenshots are saved.
 // A ~ at the front will be expanded to the home directory.
