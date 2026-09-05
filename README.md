@@ -5,10 +5,10 @@ builds container images; it ships no installer or install media.
 
 ## Images
 
-| Variant | Base | Contents |
-|---------|------|----------|
-| `desktop` | `ghcr.io/ublue-os/base-main:latest` | niri + foot + waybar + swaylock + firefox, NVIDIA drivers |
-| `laptop` | `ghcr.io/ublue-os/base-main:latest` | niri + foot + waybar + swaylock + firefox (no NVIDIA) |
+| Variant | Base | Notes |
+|---------|------|-------|
+| `desktop` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop, NVIDIA drivers |
+| `laptop` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop (no NVIDIA) |
 | `server` | `quay.io/fedora/fedora-bootc:44` | headless, minimal tools |
 
 ## Build
@@ -17,37 +17,55 @@ builds container images; it ships no installer or install media.
 ./scripts/build.sh desktop        # or: laptop | server | all
 ```
 
-Produces `localhost/paddlefish-os-<variant>:latest`.
+Produces `localhost/paddlefish-os-<variant>:latest`. Push it to a registry to
+install it.
 
-## Install / switch
+## Install
 
-There is no installer here. Install any Fedora bootc-based system with its
-official installer (creating your own user account), then:
+The images bake **no** default user; create your own account. There are two
+ways to install.
+
+### Fresh install (`bootc install`)
+
+From any Linux environment with podman (for example a Fedora live USB), install
+onto a whole disk:
+
+```sh
+sudo podman run --rm --privileged --pid=host --ipc=host \
+    -v /var/lib/containers:/var/lib/containers \
+    -v /dev:/dev \
+    ghcr.io/<owner>/paddlefish-os-<variant>:latest \
+    bootc install to-disk --wipe \
+    --target-imgref ghcr.io/<owner>/paddlefish-os-<variant>:latest /dev/sdX
+```
+
+`/dev/sdX` is erased and replaced. On the new system, log in and create your
+user account.
+
+### Switch an existing bootc system (`bootc switch`)
+
+Install any Fedora bootc-based system with its official installer, creating
+your user account, then:
 
 ```sh
 sudo bootc switch ghcr.io/<owner>/paddlefish-os-<variant>:latest
 ```
 
-`bootc switch` preserves `/etc` and `/var`, so the user account you created and
-its home directory survive. The images bake **no** default user; create your
-own during install.
+`bootc switch` preserves `/etc` and `/var`, so the user account and its home
+directory survive the switch.
+
+After install, the system tracks the image it was installed from or switched
+to; update it with `sudo bootc upgrade`.
 
 ## User config
 
-Default user configuration ships in `/etc/skel` and is applied when a new
-account is created:
-
-- fish (shell defaults, prompt, theme)
-- foot (terminal)
-- niri (compositor)
-- nvim (placeholder)
-
-`/etc/skel` is used by `useradd`, so accounts created **after** switching get
-the defaults automatically. If your account predates the switch, apply them to
-your existing home once:
+Default user configuration ships in `/etc/skel` (shell, terminal, compositor,
+editor defaults) and is applied when a new account is created. Accounts created
+**after** installing get the defaults automatically. If your account already
+exists, apply them to your home once:
 
 ```sh
 cp -r /etc/skel/. ~/
 ```
 
-New accounts default to the fish shell.
+New accounts use the shell configured as the image default.
