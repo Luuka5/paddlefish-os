@@ -1,7 +1,6 @@
 {
     "layer": "top",
     "position": "top",
-    "height": 22,
     "spacing": 2,
     "modules-left": [
         "niri/workspaces",

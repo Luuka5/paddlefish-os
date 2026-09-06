@@ -3,6 +3,8 @@ set -euo pipefail
 
 dnf5 install -y \
     git \
+    git-lfs \
+    jujutsu \
     vim \
     neovim \
     fish \
@@ -15,8 +17,7 @@ dnf5 install -y \
     sudo \
     util-linux-user \
     fastfetch \
-    zoxide \
-    flatpak
+    zoxide
 
 dnf5 clean all
 

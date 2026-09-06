@@ -13,6 +13,7 @@ dnf5 install -y \
     network-manager-applet \
     NetworkManager-tui \
     bluez \
+    greetd \
     playerctl \
     brightnessctl \
     xdg-desktop-portal-gnome \

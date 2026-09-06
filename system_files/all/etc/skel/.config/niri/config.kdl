@@ -369,6 +369,8 @@ binds {
     Super+Return hotkey-overlay-title="Open a Terminal: foot" { spawn "foot"; }
     Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Super+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Super+A hotkey-overlay-title="Toggle the Bar: waybar" { spawn-sh "pkill -SIGUSR1 waybar"; }
+    Super+E hotkey-overlay-title="Open Browser: firefox" { spawn "firefox"; }
     Super+B hotkey-overlay-title="Bluetooth: Connect" { spawn "/usr/local/bin/bt-connect"; }
     Super+Shift+B hotkey-overlay-title="Bluetooth: Disconnect" { spawn "/usr/local/bin/bt-disconnect"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
