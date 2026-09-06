@@ -1,21 +1,6 @@
 #!/bin/sh
 set -euo pipefail
 
-write_config() {
-    cat > /etc/greetd/config.toml <<EOF
-[terminal]
-vt = 1
-
-[default_session]
-command = "/usr/libexec/paddlefish/niri-session"
-user = "$user"
-
-[initial_session]
-command = "/usr/libexec/paddlefish/niri-session"
-user = "$user"
-EOF
-}
-
 # First human user (uid 1000-59999), if one exists.
 user=$(awk -F: '$3 >= 1000 && $3 < 60000 { print $1; exit }' /etc/passwd 2>/dev/null || true)
 
@@ -50,6 +35,23 @@ if [ -z "$user" ]; then
     echo "Account '$user' created."
 fi
 
-write_config
-echo "Logging in automatically next boot. Rebooting..."
+# greetd auto-login for that user.
+cat > /etc/greetd/config.toml <<EOF
+[terminal]
+vt = 1
+
+[default_session]
+command = "/usr/libexec/paddlefish/niri-session"
+user = "$user"
+
+[initial_session]
+command = "/usr/libexec/paddlefish/niri-session"
+user = "$user"
+EOF
+
+systemctl enable greetd.service >/dev/null 2>&1 || true
+mkdir -p /var/lib/paddlefish
+touch /var/lib/paddlefish/firstboot.done
+
+echo "Setup complete. Rebooting into your session..."
 systemctl reboot
