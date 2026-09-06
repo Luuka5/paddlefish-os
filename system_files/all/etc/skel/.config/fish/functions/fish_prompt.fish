@@ -4,7 +4,7 @@ function fish_prompt --description 'Write out the prompt'
 
     # Srcery Exact Palette Mapping
     set -l cwd_color (set_color 2c78bf)       # Blue (regular4)
-    set -l vcs_color (set_color fbb829)       # Yellow (regular3)
+    set -l vcs_color (set_color 519f50)       # Green (regular2)
     set -l suffix_color (set_color fce8c3)    # White (foreground)
     set -l error_color (set_color f75341)     # Bright Red (bright1)
     set -l prompt_status ""
@@ -35,7 +35,7 @@ function fish_prompt --description 'Write out the prompt'
     # newline to make output more spacy and nicer to navigate with vim keybinds
     echo
 
-    # Print login, directory (Blue), and Jujutsu/Git status (Yellow) inline on line one
+    # Print login, directory (Blue), and Jujutsu/Git status (Green) inline on line one
     echo -s (prompt_login) ' ' $cwd_color (prompt_pwd) ' ' $vcs_color (fish_vcs_prompt) $normal
 
     echo -n -s $suffix_color $suffix ' ' $normal
