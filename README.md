@@ -69,3 +69,10 @@ cp -r /etc/skel/. ~/
 ```
 
 New accounts use the shell configured as the image default.
+
+## Desktop
+
+The desktop variants ship PipeWire (audio, `pavucontrol`) plus the gnome
+portal backend, so screen sharing and portal-based screenshots work out of the
+box. If your account predates this setup, run `systemctl --user preset-all`
+once to enable the PipeWire user units.

@@ -17,6 +17,9 @@ dnf5 install -y \
     playerctl \
     brightnessctl \
     xdg-desktop-portal-gnome \
+    pipewire \
+    pipewire-pulse \
+    wireplumber \
     xwayland-satellite
 
 dnf5 clean all
