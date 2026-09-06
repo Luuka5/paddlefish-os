@@ -17,7 +17,10 @@ dnf5 install -y \
     util-linux-user \
     fastfetch \
     zoxide \
-    ripgrep
+    fzf \
+    fd-find \
+    ripgrep \
+    wl-clipboard
 
 # jujutsu (jj) is packaged in the aldantanneo/jj-vcs COPR, which tracks the
 # latest upstream release. Enable it via a repo file so this works on every

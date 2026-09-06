@@ -31,6 +31,8 @@ RUN /tmp/scripts/base.sh
 COPY system_files/${IMAGE_NAME}/ /
 COPY scripts/ /tmp/scripts/
 
+RUN /tmp/scripts/nvim-plugins.sh
+
 RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/niri.sh; fi
 
 RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/gui-apps.sh; fi
