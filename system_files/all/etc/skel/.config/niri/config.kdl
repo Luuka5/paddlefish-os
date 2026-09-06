@@ -364,17 +364,21 @@ binds {
     // shows a list of important hotkeys.
     Mod+Shift+Slash { show-hotkey-overlay; }
 
-    // Suggested binds for running programs: terminal, app launcher, screen locker.
+    // Suggested binds for running programs: terminal, app launcher, browser.
     Mod+T hotkey-overlay-title="Open a Terminal: foot" { spawn "foot"; }
     Super+Return hotkey-overlay-title="Open a Terminal: foot" { spawn "foot"; }
     Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Super+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
-    Super+A hotkey-overlay-title="Toggle the Bar: waybar" { spawn-sh "pkill -SIGUSR1 waybar"; }
+    Mod+H hotkey-overlay-title="Toggle the Bar: waybar" { spawn-sh "pkill -SIGUSR1 waybar"; }
     Super+E hotkey-overlay-title="Open Browser: firefox" { spawn "firefox"; }
+
+    // Bluetooth.
     Super+B hotkey-overlay-title="Bluetooth: Connect" { spawn "/usr/local/bin/bt-connect"; }
     Super+Shift+B hotkey-overlay-title="Bluetooth: Disconnect" { spawn "/usr/local/bin/bt-disconnect"; }
-    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
-    Mod+Shift+Alt+L hotkey-overlay-title="Lock and Suspend" { spawn-sh "swaylock & systemctl suspend"; }
+
+    // Lock the screen, and lock + suspend.
+    Super+X hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
+    Super+Shift+X hotkey-overlay-title="Lock and Suspend" { spawn-sh "swaylock & systemctl suspend"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
@@ -411,79 +415,82 @@ binds {
 
     Mod+Q repeat=false { close-window; }
 
+    // Directional navigation layers.
+    //
+    // Base keys: J/K/L/Ö (Finnish home row: left/down/up/right) and the arrow
+    // keys. Modifiers escalate the scope:
+    //   Mod                     focus within the workspace
+    //   Mod+Ctrl                move windows/columns within the workspace
+    //   Mod+Shift               focus across monitors (left/right) / workspaces (up/down)
+    //   Mod+Ctrl+Shift          move columns across monitors (left/right) / workspaces (up/down)
+
+    // Focus within the workspace.
+    Mod+J     { focus-column-left; }
+    Mod+K     { focus-window-down; }
+    Mod+L     { focus-window-up; }
+    Mod+odiaeresis { focus-column-right; }
     Mod+Left  { focus-column-left; }
     Mod+Down  { focus-window-down; }
     Mod+Up    { focus-window-up; }
     Mod+Right { focus-column-right; }
-    Mod+H     { focus-column-left; }
-    Mod+J     { focus-window-down; }
-    Mod+K     { focus-window-up; }
-    Mod+L     { focus-column-right; }
 
+    // Move windows/columns within the workspace.
+    Mod+Ctrl+J     { move-column-left; }
+    Mod+Ctrl+K     { move-window-down; }
+    Mod+Ctrl+L     { move-window-up; }
+    Mod+Ctrl+odiaeresis { move-column-right; }
     Mod+Ctrl+Left  { move-column-left; }
     Mod+Ctrl+Down  { move-window-down; }
     Mod+Ctrl+Up    { move-window-up; }
     Mod+Ctrl+Right { move-column-right; }
-    Mod+Ctrl+H     { move-column-left; }
-    Mod+Ctrl+J     { move-window-down; }
-    Mod+Ctrl+K     { move-window-up; }
-    Mod+Ctrl+L     { move-column-right; }
 
-    // Alternative commands that move across workspaces when reaching
-    // the first or last window in a column.
-    // Mod+J     { focus-window-or-workspace-down; }
-    // Mod+K     { focus-window-or-workspace-up; }
-    // Mod+Ctrl+J     { move-window-down-or-to-workspace-down; }
-    // Mod+Ctrl+K     { move-window-up-or-to-workspace-up; }
+    // Focus across monitors (left/right) and workspaces (up/down).
+    Mod+Shift+J     { focus-monitor-left; }
+    Mod+Shift+odiaeresis { focus-monitor-right; }
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Right { focus-monitor-right; }
+    Mod+Shift+K     { focus-workspace-down; }
+    Mod+Shift+L     { focus-workspace-up; }
+    Mod+Shift+Down  { focus-workspace-down; }
+    Mod+Shift+Up    { focus-workspace-up; }
 
+    // Move columns across monitors (left/right) and workspaces (up/down).
+    Mod+Ctrl+Shift+J     { move-column-to-monitor-left; }
+    Mod+Ctrl+Shift+odiaeresis { move-column-to-monitor-right; }
+    Mod+Ctrl+Shift+Left  { move-column-to-monitor-left; }
+    Mod+Ctrl+Shift+Right { move-column-to-monitor-right; }
+    Mod+Ctrl+Shift+K     { move-column-to-workspace-down; }
+    Mod+Ctrl+Shift+L     { move-column-to-workspace-up; }
+    Mod+Ctrl+Shift+Down  { move-column-to-workspace-down; }
+    Mod+Ctrl+Shift+Up    { move-column-to-workspace-up; }
+
+    // Jump to the first/last column in the workspace.
     Mod+Home { focus-column-first; }
     Mod+End  { focus-column-last; }
-    Mod+Ctrl+Home { move-column-to-first; }
-    Mod+Ctrl+End  { move-column-to-last; }
 
-    Mod+Shift+Left  { focus-monitor-left; }
-    Mod+Shift+Down  { focus-monitor-down; }
-    Mod+Shift+Up    { focus-monitor-up; }
-    Mod+Shift+Right { focus-monitor-right; }
-    Mod+Shift+H     { focus-monitor-left; }
-    Mod+Shift+J     { focus-monitor-down; }
-    Mod+Shift+K     { focus-monitor-up; }
-    Mod+Shift+L     { focus-monitor-right; }
+    // Extra layers on the alternate directional keys (Home/End = left/right,
+    // Page_Up/Page_Down = up/down):
+    //   Mod+Shift          resize: column width (Home/End), window height (Page keys)
+    //   Mod+Ctrl           move a single window to another monitor/workspace
+    //   Mod+Ctrl+Shift     move a whole workspace to another monitor / reorder it
 
-    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
-    Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
-    Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
-    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
-    Mod+Shift+Ctrl+H     { move-column-to-monitor-left; }
-    Mod+Shift+Ctrl+J     { move-column-to-monitor-down; }
-    Mod+Shift+Ctrl+K     { move-column-to-monitor-up; }
-    Mod+Shift+Ctrl+L     { move-column-to-monitor-right; }
+    // Resize column width (Home/End) and window height (Page keys).
+    Mod+Shift+Home { set-column-width "-10%"; }
+    Mod+Shift+End  { set-column-width "+10%"; }
+    Mod+Shift+Page_Up   { set-window-height "-10%"; }
+    Mod+Shift+Page_Down { set-window-height "+10%"; }
 
-    // Alternatively, there are commands to move just a single window:
-    // Mod+Shift+Ctrl+Left  { move-window-to-monitor-left; }
-    // ...
+    // Move a single window to another monitor (Home/End) or workspace (Page keys).
+    Mod+Ctrl+Home { move-window-to-monitor-left; }
+    Mod+Ctrl+End  { move-window-to-monitor-right; }
+    Mod+Ctrl+Page_Up   { move-window-to-workspace-up; }
+    Mod+Ctrl+Page_Down { move-window-to-workspace-down; }
 
-    // And you can also move a whole workspace to another monitor:
-    // Mod+Shift+Ctrl+Left  { move-workspace-to-monitor-left; }
-    // ...
-
-    Mod+Page_Down      { focus-workspace-down; }
-    Mod+Page_Up        { focus-workspace-up; }
-    Mod+U              { focus-workspace-down; }
-    Mod+I              { focus-workspace-up; }
-    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
-    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
-    Mod+Ctrl+U         { move-column-to-workspace-down; }
-    Mod+Ctrl+I         { move-column-to-workspace-up; }
-
-    // Alternatively, there are commands to move just a single window:
-    // Mod+Ctrl+Page_Down { move-window-to-workspace-down; }
-    // ...
-
-    Mod+Shift+Page_Down { move-workspace-down; }
-    Mod+Shift+Page_Up   { move-workspace-up; }
-    Mod+Shift+U         { move-workspace-down; }
-    Mod+Shift+I         { move-workspace-up; }
+    // Move a whole workspace to another monitor (Home/End) or reorder it (Page keys).
+    Mod+Ctrl+Shift+Home { move-workspace-to-monitor-left; }
+    Mod+Ctrl+Shift+End  { move-workspace-to-monitor-right; }
+    Mod+Ctrl+Shift+Page_Up   { move-workspace-up; }
+    Mod+Ctrl+Shift+Page_Down { move-workspace-down; }
 
     // You can bind mouse wheel scroll ticks using the following syntax.
     // These binds will change direction based on the natural-scroll setting.
@@ -586,21 +593,6 @@ binds {
 
     // Center all fully visible columns on screen.
     Mod+Ctrl+C { center-visible-columns; }
-
-    // Finer width adjustments.
-    // This command can also:
-    // * set width in pixels: "1000"
-    // * adjust width in pixels: "-5" or "+5"
-    // * set width as a percentage of screen width: "25%"
-    // * adjust width as a percentage of screen width: "-10%" or "+10%"
-    // Pixel sizes use logical, or scaled, pixels. I.e. on an output with scale 2.0,
-    // set-column-width "100" will make the column occupy 200 physical screen pixels.
-    Mod+Minus { set-column-width "-10%"; }
-    Mod+Equal { set-column-width "+10%"; }
-
-    // Finer height adjustments when in column with other windows.
-    Mod+Shift+Minus { set-window-height "-10%"; }
-    Mod+Shift+Equal { set-window-height "+10%"; }
 
     // Move the focused window between the floating and the tiling layout.
     Mod+V       { toggle-window-floating; }
