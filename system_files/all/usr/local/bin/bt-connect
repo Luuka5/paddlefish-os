@@ -1,0 +1,13 @@
+#!/bin/sh
+set -euo pipefail
+
+# Stateless: connect the first paired device that isn't connected.
+for mac in $(bluetoothctl devices Paired | awk '{print $2}'); do
+    state=$(bluetoothctl info "$mac" 2>/dev/null | sed -n 's/^[[:space:]]*Connected: //p')
+    if [ "$state" != "yes" ]; then
+        bluetoothctl connect "$mac"
+        exit 0
+    fi
+done
+
+exit 1

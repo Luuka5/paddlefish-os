@@ -366,7 +366,11 @@ binds {
 
     // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+T hotkey-overlay-title="Open a Terminal: foot" { spawn "foot"; }
+    Super+Return hotkey-overlay-title="Open a Terminal: foot" { spawn "foot"; }
     Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Super+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
+    Super+B hotkey-overlay-title="Bluetooth: Connect" { spawn "/usr/local/bin/bt-connect"; }
+    Super+Shift+B hotkey-overlay-title="Bluetooth: Disconnect" { spawn "/usr/local/bin/bt-disconnect"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
     Mod+Shift+Alt+L hotkey-overlay-title="Lock and Suspend" { spawn-sh "swaylock & systemctl suspend"; }
 

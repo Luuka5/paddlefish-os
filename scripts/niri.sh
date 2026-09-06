@@ -11,6 +11,8 @@ dnf5 install -y \
     swaylock \
     pavucontrol \
     network-manager-applet \
+    NetworkManager-tui \
+    bluez \
     playerctl \
     brightnessctl \
     xdg-desktop-portal-gnome \

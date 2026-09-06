@@ -14,7 +14,9 @@ dnf5 install -y \
     buildah \
     sudo \
     util-linux-user \
-    fastfetch
+    fastfetch \
+    zoxide \
+    flatpak
 
 dnf5 clean all
 

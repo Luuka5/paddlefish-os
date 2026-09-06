@@ -2,6 +2,9 @@ if status is-interactive
 # Commands to run in interactive sessions can go here
 end
 
+# No "Welcome to fish" greeting.
+set -g fish_greeting
+
 # Srcery Color Palette for Fish Shell
 set -g fish_color_normal fce8c3
 set -g fish_color_command 519f50
