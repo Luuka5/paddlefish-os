@@ -39,6 +39,8 @@ RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/gui-apps.sh; fi
 
 RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/flatpak-apps.sh; fi
 
+RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/power.sh; fi
+
 RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then glib-compile-schemas /usr/share/glib-2.0/schemas; fi
 
 RUN --mount=type=bind,from=akmods_nvidia,src=/rpms,dst=/tmp/akmods-nv-rpms \
