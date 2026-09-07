@@ -273,6 +273,11 @@ layout {
 spawn-at-startup "waybar"
 spawn-at-startup "nm-applet"
 
+// Import the graphical session environment into the user systemd manager and
+// dbus so user services (e.g. xdg-desktop-portal-gnome) can reach the session.
+spawn-at-startup "systemctl" "--user" "import-environment" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP"
+spawn-at-startup "dbus-update-activation-environment" "--systemd" "WAYLAND_DISPLAY" "XDG_CURRENT_DESKTOP" "XDG_SESSION_TYPE" "XDG_SESSION_DESKTOP"
+
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
 

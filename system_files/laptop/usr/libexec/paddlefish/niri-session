@@ -8,4 +8,4 @@ export GTK_THEME=Adwaita:dark
 export QT_QPA_PLATFORMTHEME=gtk3
 export MOZ_ENABLE_WAYLAND=1
 
-exec niri
+exec /usr/bin/niri-session
