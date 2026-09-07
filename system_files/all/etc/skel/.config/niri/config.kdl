@@ -272,7 +272,6 @@ layout {
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "waybar"
 spawn-at-startup "nm-applet"
-spawn-at-startup "mako"
 
 // Import the graphical session environment into the user systemd manager and
 // dbus so user services (e.g. xdg-desktop-portal-gnome) can reach the session.

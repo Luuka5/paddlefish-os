@@ -8,6 +8,7 @@ dnf5 install -y \
     foot \
     fuzzel \
     waybar \
+    mako \
     swaylock \
     pavucontrol \
     network-manager-applet \

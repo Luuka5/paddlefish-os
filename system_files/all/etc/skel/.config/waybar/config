@@ -73,7 +73,7 @@
         "bat": "BAT2"
     },
     "power-profiles-daemon": {
-        "format": "{icon}"i
+        "format": "{icon}",
         "tooltip-format": "Power profile: {profile}",
         "tooltip": true,
         "format-icons": {
