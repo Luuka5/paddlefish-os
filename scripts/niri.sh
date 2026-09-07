@@ -20,7 +20,15 @@ dnf5 install -y \
     pipewire \
     pipewire-pulse \
     wireplumber \
+    wdisplays \
     xwayland-satellite
+
+# shikane is only built for f43 in the sand-head/packages COPR. Its spurious
+# "wayland-protocols" dependency was merged into wayland-protocols-devel in
+# f44, so install the f43 RPM directly with --nodeps (all real deps resolve).
+curl -sL -o /tmp/shikane.rpm https://download.copr.fedorainfracloud.org/results/sand-head/packages/fedora-43-x86_64/10094150-shikane/shikane-1.0.1-1.fc43.x86_64.rpm
+rpm -Uvh --nodeps /tmp/shikane.rpm
+rm -f /tmp/shikane.rpm
 
 dnf5 clean all
 
