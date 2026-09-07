@@ -7,14 +7,14 @@ builds container images; it ships no installer or install media.
 
 | Variant | Base | Notes |
 |---------|------|-------|
-| `desktop` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop, NVIDIA drivers |
-| `laptop` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop (no NVIDIA) |
+| `desktop` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop (no NVIDIA) |
+| `desktop-nvidia` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop, NVIDIA drivers |
 | `server` | `quay.io/fedora/fedora-bootc:44` | headless, minimal tools |
 
 ## Build
 
 ```sh
-./scripts/build.sh desktop        # or: laptop | server | all
+./scripts/build.sh desktop        # or: desktop-nvidia | server | all
 ```
 
 Produces `localhost/paddlefish-os-<variant>:latest`. Push it to a registry to
@@ -34,9 +34,9 @@ onto a whole disk:
 sudo podman run --rm --privileged --pid=host --ipc=host \
     -v /var/lib/containers:/var/lib/containers \
     -v /dev:/dev \
-    ghcr.io/<owner>/paddlefish-os-<variant>:latest \
+    ghcr.io/luuka5/paddlefish-os-<variant>:latest \
     bootc install to-disk --wipe \
-    --target-imgref ghcr.io/<owner>/paddlefish-os-<variant>:latest /dev/sdX
+    --target-imgref ghcr.io/luuka5/paddlefish-os-<variant>:latest /dev/sdX
 ```
 
 `/dev/sdX` is erased and replaced. On the new system, log in and create your
@@ -48,7 +48,7 @@ Install any Fedora bootc-based system with its official installer, creating
 your user account, then:
 
 ```sh
-sudo bootc switch ghcr.io/<owner>/paddlefish-os-<variant>:latest
+sudo bootc switch ghcr.io/luuka5/paddlefish-os-<variant>:latest
 ```
 
 `bootc switch` preserves `/etc` and `/var`, so the user account and its home

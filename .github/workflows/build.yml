@@ -25,11 +25,11 @@ jobs:
         include:
           - variant: desktop
             base_image: ghcr.io/ublue-os/base-main:latest
-            build_nvidia: "Y"
-            build_desktop: "Y"
-          - variant: laptop
-            base_image: ghcr.io/ublue-os/base-main:latest
             build_nvidia: "N"
+            build_desktop: "Y"
+          - variant: desktop-nvidia
+            base_image: ghcr.io/ublue-os/base-main:latest
+            build_nvidia: "Y"
             build_desktop: "Y"
           - variant: server
             base_image: quay.io/fedora/fedora-bootc:44

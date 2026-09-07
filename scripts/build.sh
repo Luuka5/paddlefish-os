@@ -21,21 +21,21 @@ build_variant() {
 
 case "${1:-all}" in
     desktop)
-        build_variant desktop "ghcr.io/ublue-os/base-main:latest" Y Y
+        build_variant desktop "ghcr.io/ublue-os/base-main:latest" N Y
         ;;
-    laptop)
-        build_variant laptop "ghcr.io/ublue-os/base-main:latest" N Y
+    desktop-nvidia)
+        build_variant desktop-nvidia "ghcr.io/ublue-os/base-main:latest" Y Y
         ;;
     server)
         build_variant server "quay.io/fedora/fedora-bootc:${FEDORA_MAJOR_VERSION}" N N
         ;;
     all)
-        build_variant desktop "ghcr.io/ublue-os/base-main:latest" Y Y
-        build_variant laptop  "ghcr.io/ublue-os/base-main:latest" N Y
-        build_variant server  "quay.io/fedora/fedora-bootc:${FEDORA_MAJOR_VERSION}" N N
+        build_variant desktop         "ghcr.io/ublue-os/base-main:latest" N Y
+        build_variant desktop-nvidia  "ghcr.io/ublue-os/base-main:latest" Y Y
+        build_variant server          "quay.io/fedora/fedora-bootc:${FEDORA_MAJOR_VERSION}" N N
         ;;
     *)
-        echo "Unknown variant: $1 (available: desktop, laptop, server, all)"
+        echo "Unknown variant: $1 (available: desktop, desktop-nvidia, server, all)"
         exit 1
         ;;
 esac
