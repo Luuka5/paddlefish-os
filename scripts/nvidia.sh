@@ -61,6 +61,12 @@ if [[ "${NEGATIVO17_MULT_PREV_ENABLED}" = "Y" ]]; then
     dnf5 config-manager setopt fedora-multimedia.enabled=1
 fi
 
+# nvidia-settings ships an X11-only autostart entry that runs
+# `nvidia-settings --load-config-only`. There is no X server in the Wayland
+# niri session, so it fails on every login. Remove it.
+rm -f /etc/xdg/autostart/nvidia-settings-load.desktop \
+      /usr/etc/xdg/autostart/nvidia-settings-load.desktop
+
 # Enable systemd services
 systemctl enable nvidia-cdi-refresh.service nvidia-cdi-refresh.path nvidia-persistenced.service
 
