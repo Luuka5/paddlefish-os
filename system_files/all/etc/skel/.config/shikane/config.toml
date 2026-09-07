@@ -1,0 +1,38 @@
+# shikane configuration (see `man 5 shikane` or
+# https://w0lff.gitlab.io/shikane for the full reference).
+#
+# shikane matches your currently connected displays against the profiles
+# below and applies the best-matching one automatically at startup and when
+# displays are plugged in or removed. No output is touched until a profile
+# matches, so an empty config is safe to leave as-is.
+#
+# The quickest way to build your own profiles:
+#   1. Arrange your outputs the way you like them (e.g. with wdisplays).
+#   2. Run: shikanectl export "<name>"
+#   3. Append the printed TOML to this file, then run: shikanectl reload
+#
+# Examples (uncomment and adjust to match your displays; find output names
+# with `niri msg outputs` or `wlopm --list`):
+#
+# Laptop panel on its own.
+# [[profile]]
+# name = "internal"
+#     [[profile.output]]
+#     search = "name=eDP-1"
+#     enable = true
+#     mode = "2560x1600@120"
+#     position = "0,0"
+#     scale = 2
+#
+# External monitor to the right of the laptop panel.
+# [[profile]]
+# name = "docked"
+#     [[profile.output]]
+#     search = "name=eDP-1"
+#     enable = false
+#     [[profile.output]]
+#     search = "name=DP-1"
+#     enable = true
+#     mode = "2560x1440@144"
+#     position = "0,0"
+#     scale = 1
