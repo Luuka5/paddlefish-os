@@ -369,7 +369,7 @@ binds {
     Super+Return hotkey-overlay-title="Open a Terminal: foot" { spawn "foot"; }
     Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Super+Space hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
-    Mod+H hotkey-overlay-title="Toggle the Bar: waybar" { spawn-sh "pkill -SIGUSR1 waybar"; }
+    Mod+A hotkey-overlay-title="Toggle the Bar: waybar" { spawn-sh "pkill -SIGUSR1 waybar"; }
     Super+E hotkey-overlay-title="Open Browser: firefox" { spawn "firefox"; }
 
     // Bluetooth.
