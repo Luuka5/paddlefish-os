@@ -6,15 +6,17 @@ AKMODNV_PATH=/tmp/akmods-nv-rpms
 # Source version metadata from akmods build
 source "${AKMODNV_PATH}"/kmods/nvidia-vars
 
-# Install multilib mesa packages from negativo17-multimedia before enabling nvidia repo
+# The base image ships mesa from negativo17-multimedia at epoch 1, whose
+# per-arch publishes are asynchronous (i686 can land ahead of x86_64) and whose
+# epoch bump stops dnf from falling back to Fedora's matching mesa -- causing
+# multilib file conflicts. Align both arches to Fedora's epoch-0 mesa, which is
+# published arch-atomically. distro-sync is required (epoch 1->0 downgrade).
 if [[ "$(rpm -E '%{_arch}')" == "x86_64" ]]; then
-    dnf5 install -y \
-        mesa-dri-drivers.i686 \
-        mesa-filesystem.i686 \
-        mesa-libEGL.i686 \
-        mesa-libGL.i686 \
-        mesa-libgbm.i686 \
-        mesa-vulkan-drivers.i686
+    dnf5 distro-sync -y --repo=fedora --repo=updates \
+        mesa-dri-drivers mesa-filesystem mesa-libEGL mesa-libGL mesa-libgbm mesa-vulkan-drivers
+    dnf5 install -y --repo=fedora --repo=updates \
+        mesa-dri-drivers.i686 mesa-filesystem.i686 mesa-libEGL.i686 \
+        mesa-libGL.i686 mesa-libgbm.i686 mesa-vulkan-drivers.i686
 fi
 
 # Disable negativo17 multimedia to avoid conflicts during nvidia install
