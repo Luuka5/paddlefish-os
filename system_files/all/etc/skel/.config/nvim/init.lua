@@ -19,6 +19,12 @@ end
 -- termguicolors off so Neovim uses the terminal palette, not RGB colors.
 vim.opt.termguicolors = false
 
+-- Darker UI elements following the srcery palette (see foot.ini).
+-- srcery bright black (#918175, cterm 8).
+vim.cmd("highlight LineNr ctermfg=8")
+vim.cmd("highlight SpecialKey ctermfg=8")
+vim.cmd("highlight Whitespace ctermfg=8")
+
 -- Share the OS clipboard (requires the wl-clipboard package on Wayland).
 vim.o.clipboard = "unnamedplus"
 
