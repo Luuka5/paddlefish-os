@@ -82,6 +82,16 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   end,
 })
 
+-- Open a terminal (fish) by default when nvim is started without file arguments.
+vim.api.nvim_create_autocmd("VimEnter", {
+  callback = function()
+    if vim.fn.argc() > 0 then
+      return
+    end
+    vim.cmd("terminal")
+  end,
+})
+
 -- [[ Search (telescope) ]]
 -- Search is backed by vendored telescope.nvim + plenary (scripts/nvim-plugins.sh):
 -- pinned SHAs, installed system-wide at image build, nothing fetched at runtime.
