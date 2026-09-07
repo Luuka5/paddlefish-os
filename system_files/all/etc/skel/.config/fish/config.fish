@@ -34,3 +34,6 @@ set -g fish_pager_color_completion fce8c3
 set -g fish_pager_color_description 918175
 set -g fish_pager_color_selected_background --background=918175
 
+# zoxide (smart cd).
+eval "$(zoxide init fish)"
+
