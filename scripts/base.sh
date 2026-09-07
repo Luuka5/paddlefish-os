@@ -12,6 +12,7 @@ dnf5 install -y \
     wget \
     unzip \
     podman \
+    podman-compose \
     buildah \
     sudo \
     util-linux-user \
