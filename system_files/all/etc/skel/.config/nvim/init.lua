@@ -88,6 +88,17 @@ vim.api.nvim_create_autocmd("TextYankPost", {
   end,
 })
 
+-- nvim applies these window-local defaults for terminal buffers, except for
+-- the terminal opened during VimEnter (the window is already current there).
+local function terminal_window_defaults()
+  vim.wo.list = false
+  vim.wo.wrap = false
+  vim.wo.number = false
+  vim.wo.relativenumber = false
+  vim.wo.signcolumn = "no"
+  vim.wo.foldcolumn = "0"
+end
+
 -- Open a terminal (fish) by default when nvim is started without file arguments.
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
@@ -95,6 +106,16 @@ vim.api.nvim_create_autocmd("VimEnter", {
       return
     end
     vim.cmd("terminal")
+    -- TermOpen does not fire for this startup terminal, so apply the terminal
+    -- window defaults manually.
+    terminal_window_defaults()
+  end,
+})
+
+-- Keep terminal buffers consistent with nvim's terminal window defaults.
+vim.api.nvim_create_autocmd("TermOpen", {
+  callback = function()
+    terminal_window_defaults()
   end,
 })
 
