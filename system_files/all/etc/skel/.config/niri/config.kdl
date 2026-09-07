@@ -272,6 +272,7 @@ layout {
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "waybar"
 spawn-at-startup "nm-applet"
+spawn-at-startup "mako"
 
 // Import the graphical session environment into the user systemd manager and
 // dbus so user services (e.g. xdg-desktop-portal-gnome) can reach the session.
@@ -383,6 +384,9 @@ binds {
     // Lock the screen, and lock + suspend.
     Super+X hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
     Super+Shift+X hotkey-overlay-title="Lock and Suspend" { spawn-sh "swaylock & systemctl suspend"; }
+
+    Mod+N hotkey-overlay-title="Dismiss Notification" { spawn-sh "makoctl dismiss"; }
+    Mod+Shift+N hotkey-overlay-title="Invoke Notification Action" { spawn-sh "makoctl invoke"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
