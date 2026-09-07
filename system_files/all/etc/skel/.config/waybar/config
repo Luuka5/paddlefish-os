@@ -1,6 +1,6 @@
 {
-    "layer": "top",
-    "position": "top",
+    "layer": "bottom",
+    "position": "bottom",
     "spacing": 2,
     "modules-left": [
         "niri/workspaces",
@@ -73,7 +73,7 @@
         "bat": "BAT2"
     },
     "power-profiles-daemon": {
-        "format": "{icon}",
+        "format": "{icon}"i
         "tooltip-format": "Power profile: {profile}",
         "tooltip": true,
         "format-icons": {
