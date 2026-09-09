@@ -66,7 +66,7 @@ input {
 
     // Focus windows and outputs automatically when moving the mouse into them.
     // Setting max-scroll-amount="0%" makes it work only on windows already fully on screen.
-    focus-follows-mouse max-scroll-amount="0%"
+    focus-follows-mouse max-scroll-amount="5%"
 }
 
 // You can configure outputs by their name, which you can find
@@ -383,6 +383,9 @@ binds {
     // Lock the screen, and lock + suspend.
     Super+X hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
     Super+Shift+X hotkey-overlay-title="Lock and Suspend" { spawn-sh "swaylock & systemctl suspend"; }
+
+    Mod+N hotkey-overlay-title="Dismiss Notification" { spawn-sh "makoctl dismiss"; }
+    Mod+Shift+N hotkey-overlay-title="Invoke Notification Action" { spawn-sh "makoctl invoke"; }
 
     // Use spawn-sh to run a shell command. Do this if you need pipes, multiple commands, etc.
     // Note: the entire command goes as a single argument. It's passed verbatim to `sh -c`.
