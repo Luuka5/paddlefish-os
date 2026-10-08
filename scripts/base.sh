@@ -14,6 +14,7 @@ dnf5 install -y \
     podman \
     podman-compose \
     buildah \
+    fuse-overlayfs \
     sudo \
     util-linux-user \
     fastfetch \
@@ -21,6 +22,7 @@ dnf5 install -y \
     fzf \
     fd-find \
     ripgrep \
+    foot-terminfo \
     wl-clipboard
 
 # jujutsu (jj) is packaged in the aldantanneo/jj-vcs COPR, which tracks the

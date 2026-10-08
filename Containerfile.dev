@@ -1,0 +1,102 @@
+ARG FEDORA_MAJOR_VERSION=44
+ARG BASE_IMAGE=registry.fedoraproject.org/fedora:${FEDORA_MAJOR_VERSION}
+ARG DEV_VARIANT=core
+
+FROM ${BASE_IMAGE}
+
+# Re-declare so these are available inside RUN instructions of this stage.
+ARG DEV_VARIANT=core
+
+# Layer order is deliberate for caching:
+#
+#   1. Variant-independent, expensive tooling first (base, languages, agents),
+#      with each script copied on its own so editing one does not invalidate the
+#      layers built from the others.
+#   2. The variant gate, then the variant-specific GUI/GPU (gui, nvidia glue,
+#      CUDA last), each script copied on its own, so the shared layers above are
+#      reused when building core, gui and nvidia in one go and edits to one
+#      variant script don't invalidate the others. The gate comes before the
+#      variant-specific steps so a bad value fails first, but after the shared
+#      installs so it doesn't break cross-variant sharing.
+#   3. Cheap, frequently edited config (system_files) and the user last, so
+#      config changes rebuild only the tail of the image.
+
+# --- 1. Shared tooling -----------------------------------------------------
+COPY scripts/base.sh /tmp/scripts/base.sh
+RUN /tmp/scripts/base.sh
+
+# Language toolchains and agents. Each script is copied individually.
+COPY scripts/dev/versions.env /tmp/scripts/dev/versions.env
+
+COPY scripts/dev/web.sh /tmp/scripts/dev/web.sh
+RUN /tmp/scripts/dev/web.sh
+
+COPY scripts/dev/rust.sh /tmp/scripts/dev/rust.sh
+RUN /tmp/scripts/dev/rust.sh
+
+COPY scripts/dev/go.sh /tmp/scripts/dev/go.sh
+RUN /tmp/scripts/dev/go.sh
+
+COPY scripts/dev/c-cpp.sh /tmp/scripts/dev/c-cpp.sh
+RUN /tmp/scripts/dev/c-cpp.sh
+
+COPY scripts/dev/agents.sh /tmp/scripts/dev/agents.sh
+RUN /tmp/scripts/dev/agents.sh
+
+# --- 2. Variant gate, variant-specific GUI/GPU ----------------------------
+# The gate is after the shared installs (so they stay shareable across
+# variants) but before the variant-specific steps (so a bad value fails first).
+RUN case "${DEV_VARIANT}" in \
+        core|gui|nvidia) ;; \
+        *) echo "DEV_VARIANT must be core, gui or nvidia (got '${DEV_VARIANT}')" >&2; exit 1 ;; \
+    esac
+
+COPY scripts/dev/gui.sh /tmp/scripts/dev/gui.sh
+RUN if [ "${DEV_VARIANT}" != "core" ]; then /tmp/scripts/dev/gui.sh; fi
+
+COPY scripts/dev/nvidia-dev.sh /tmp/scripts/dev/nvidia-dev.sh
+RUN if [ "${DEV_VARIANT}" = "nvidia" ]; then /tmp/scripts/dev/nvidia-dev.sh; fi
+
+# CUDA last: it is the heaviest, nvidia-only layer and must run after gui.sh's
+# distro-sync. Each script is copied individually so edits to one do not
+# invalidate the layers built from the others.
+COPY scripts/dev/cuda.sh /tmp/scripts/dev/cuda.sh
+RUN if [ "${DEV_VARIANT}" = "nvidia" ]; then FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION}" /tmp/scripts/dev/cuda.sh; fi
+
+# --- 3. Config and user ---------------------------------------------------
+# Shared OS config (fish, bootc bits), then the dev overlay, then the variant
+# overlay. dev-common intentionally overwrites the base nvim config.
+COPY system_files/all/ /
+COPY system_files/dev-common/ /
+COPY system_files/dev-${DEV_VARIANT}/ /
+
+# Container-local user used with --userns=keep-id. --create-home seeds
+# /home/dev from /etc/skel, so this must come after the config COPYs.
+RUN useradd --create-home --shell /usr/bin/fish dev
+
+# The skel copy from useradd can be root-owned, and podman creates missing
+# parents of the cache volume mounts as root; either way tools cannot write to
+# ~/.config, ~/.local/share, ~/.cache or ~/go. Create the cache mount points
+# and make the whole home tree owned by dev.
+RUN mkdir -p \
+        /home/dev/.cache \
+        /home/dev/.cargo/registry \
+        /home/dev/.cargo/git \
+        /home/dev/.npm \
+        /home/dev/.bun \
+        /home/dev/.local/share/pnpm \
+        /home/dev/.local/share/nvim \
+        /home/dev/go/pkg/mod && \
+    chown -R dev:dev /home/dev
+
+# Let the container user install packages at runtime (sudo is from base.sh).
+# The account has no password, so this is passwordless by necessity.
+RUN printf 'dev ALL=(ALL) NOPASSWD:ALL\n' > /etc/sudoers.d/dev && \
+    chmod 0440 /etc/sudoers.d/dev
+
+RUN rm -rf /tmp/scripts /run/dnf /var/log/dnf5.log \
+         /var/cache/libdnf5 /var/lib/dnf/repos /var/cache/ldconfig/aux-cache
+
+ENV RUSTUP_HOME=/usr/local/rustup
+
+CMD ["/usr/bin/fish", "-l"]

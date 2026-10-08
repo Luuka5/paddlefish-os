@@ -1,0 +1,3 @@
+# Keep the build context small; these are never COPYed into any image.
+.git
+.jj
