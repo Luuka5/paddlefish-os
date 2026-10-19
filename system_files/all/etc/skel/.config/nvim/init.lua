@@ -9,24 +9,13 @@
 -- https://neovim.io/doc/user/
 
 -- [[ Terminal colors ]]
--- Clear all highlighting and use the 16-color terminal ANSI palette (srcery)
--- instead of loading a colorscheme.
-vim.cmd("highlight clear")
-if vim.fn.exists("syntax_on") == 1 then
-  vim.cmd("syntax reset")
-end
+-- The palette is shared with the development containers; see
+-- system_files/all/usr/share/paddlefish/nvim/theme.lua.
+dofile("/usr/share/paddlefish/nvim/theme.lua")
 
--- termguicolors off so Neovim uses the terminal palette, not RGB colors.
-vim.opt.termguicolors = false
-
--- Darker UI elements following the srcery palette (see foot.ini).
--- srcery bright black (#918175, cterm 8).
-vim.cmd("highlight LineNr ctermfg=8")
-vim.cmd("highlight SpecialKey ctermfg=8")
-vim.cmd("highlight Whitespace ctermfg=8")
-
--- Share the OS clipboard (requires the wl-clipboard package on Wayland).
-vim.o.clipboard = "unnamedplus"
+-- Shared clipboard policy (native-first, OSC 52 copy-only fallback); see
+-- system_files/all/usr/share/paddlefish/nvim/clipboard.lua.
+dofile("/usr/share/paddlefish/nvim/clipboard.lua")
 
 -- [[ Leader ]]
 vim.g.mapleader = " "

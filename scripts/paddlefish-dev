@@ -1,0 +1,378 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# paddlefish-dev - run a Paddlefish OS development container for the current
+# project directory.
+#
+# Every project directory gets its own container instance and (optionally)
+# podman sidecar. Containers are never shared between projects. Config is baked
+# into the image's /home/dev; the project directory is bind-mounted at
+# /workspace, and package caches live in shared volumes so they persist across
+# containers and are reused by every project.
+#
+# Usage:
+#   paddlefish-dev [options] [-- command [args...]]
+#
+# Options:
+#   --dir DIR          Project directory (default: current directory)
+#   --gui              Share the host Wayland/X11 session (implies the gui image)
+#   --gpu=amd          Share /dev/dri for AMD/Intel GPUs (implies the gui image)
+#   --gpu=nvidia       Pass the NVIDIA CDI GPU (implies the nvidia image)
+#   -p, --publish PORT Publish a container port (repeatable)
+#   --net=host         Use the host network (mutually exclusive with -p)
+#   --podman           Start a per-project podman sidecar (podman-in-podman)
+#   --local            Build the image from source instead of pulling it
+#   --build            Rebuild the image from source (implies --local)
+#   --recreate         Recreate the container (and sidecar) even if it exists
+#   --clean            Remove this project's container and sidecar
+#   --clean-cache      Remove the shared caches (affects ALL projects)
+#   -h, --help         Show this help
+#
+# With no `-- command`, a login fish shell is started in /workspace. Images are
+# pulled from GHCR by default; use --local to build from this repo instead.
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repo_dir=$(CDPATH= cd -- "${script_dir}/.." && pwd)
+
+# GHCR image owner, derived from this repo's origin (github.com/<owner>/...).
+# Used to pull prebuilt dev images from the registry by default. Override with
+# $PADDLEFISH_DEV_OWNER. If undetectable, fall back to local builds.
+owner="${PADDLEFISH_DEV_OWNER:-}"
+if [ -z "$owner" ] && command -v git >/dev/null 2>&1 \
+    && url=$(git -C "$repo_dir" remote get-url origin 2>/dev/null); then
+    owner=$(printf '%s' "$url" | sed -E 's#^.*github\.com[:/]([^/]+)/.*$#\1#')
+fi
+owner="${owner,,}"
+
+project="$PWD"
+variant="core"
+gui=0
+gpu=""
+net=""
+local=0
+with_podman=0
+do_build=0
+recreate=0
+clean=0
+clean_cache=0
+ports=()
+run_cmd=()
+
+# Shared, project-independent cache volumes: <name> <mount point>.
+cache_names=(
+    paddlefish-dev-cache-generic
+    paddlefish-dev-cache-cargo-registry
+    paddlefish-dev-cache-cargo-git
+    paddlefish-dev-cache-npm
+    paddlefish-dev-cache-bun
+    paddlefish-dev-cache-pnpm
+    paddlefish-dev-cache-go-mod
+    paddlefish-dev-cache-nvim
+)
+cache_dests=(
+    /home/dev/.cache
+    /home/dev/.cargo/registry
+    /home/dev/.cargo/git
+    /home/dev/.npm
+    /home/dev/.bun
+    /home/dev/.local/share/pnpm
+    /home/dev/go/pkg/mod
+    /home/dev/.local/share/nvim
+)
+
+usage() {
+    cat <<'EOF'
+paddlefish-dev - run a Paddlefish OS development container for the current
+project directory.
+
+Usage:
+  paddlefish-dev [options] [-- command [args...]]
+
+Options:
+  --dir DIR          Project directory (default: current directory)
+  --gui              Share the host Wayland/X11 session (implies the gui image)
+  --gpu=amd          Share /dev/dri for AMD/Intel GPUs (implies the gui image)
+  --gpu=nvidia       Pass the NVIDIA CDI GPU (implies the nvidia image)
+  -p, --publish PORT Publish a container port (repeatable)
+  --net=host         Use the host network (mutually exclusive with -p)
+  --podman           Start a per-project podman sidecar (podman-in-podman)
+  --local            Build the image from source instead of pulling it
+  --build            Rebuild the image from source (implies --local)
+  --recreate         Recreate the container (and sidecar) even if it exists
+  --clean            Remove this project's container and sidecar
+  --clean-cache      Remove the shared caches (affects ALL projects)
+  -h, --help         Show this help
+
+With no `-- command`, a login fish shell is started in /workspace. Images are
+pulled from GHCR by default; use --local to build from this repo instead.
+The project directory is bind-mounted at /workspace (SELinux labeling is
+disabled for the container, so host mounts work without relabeling).
+EOF
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --dir)
+            shift
+            [ "$#" -ge 1 ] || { echo "--dir requires an argument" >&2; exit 2; }
+            project="$1"
+            ;;
+        --gui)
+            gui=1
+            [ "$variant" = "core" ] && variant="gui"
+            ;;
+        --gpu=amd)
+            gpu="amd"
+            variant="gui"
+            ;;
+        --gpu=nvidia)
+            gpu="nvidia"
+            variant="nvidia"
+            ;;
+        --gpu)
+            echo "--gpu requires a value: amd or nvidia" >&2
+            exit 2
+            ;;
+        -p|--publish)
+            opt="$1"
+            shift
+            [ "$#" -ge 1 ] || { echo "${opt} requires an argument" >&2; exit 2; }
+            ports+=("$1")
+            ;;
+        --publish=*)
+            ports+=("${1#--publish=}")
+            ;;
+        --net=host)
+            net="host"
+            ;;
+        --net)
+            echo "--net requires a value (only 'host' is supported)" >&2
+            exit 2
+            ;;
+        --podman)
+            with_podman=1
+            ;;
+        --local)
+            local=1
+            ;;
+        --build)
+            do_build=1
+            local=1
+            ;;
+        --recreate)
+            recreate=1
+            ;;
+        --clean)
+            clean=1
+            ;;
+        --clean-cache)
+            clean_cache=1
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            run_cmd=("$@")
+            break
+            ;;
+        -*)
+            echo "Unknown option: $1" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            # Treat the first bare word as the start of the command.
+            run_cmd=("$@")
+            break
+            ;;
+    esac
+    shift
+done
+
+command -v podman >/dev/null 2>&1 || { echo "podman is required" >&2; exit 1; }
+
+if [ "$net" = "host" ] && [ "${#ports[@]}" -gt 0 ]; then
+    echo "--net=host cannot be combined with -p/--publish" >&2
+    exit 2
+fi
+
+project=$(readlink -f "$project")
+[ -d "$project" ] || { echo "not a directory: $project" >&2; exit 1; }
+
+instance_id=$(printf '%s' "$project" | sha256sum | cut -c1-12)
+name="paddlefish-dev-${instance_id}"
+sidecar="paddlefish-dev-podman-${instance_id}"
+podman_storage_vol="paddlefish-dev-podman-storage-${instance_id}"
+podman_run_vol="paddlefish-dev-podman-run-${instance_id}"
+
+# By default use the prebuilt image from the registry; --local builds from
+# source with a localhost tag.
+if [ "$local" -eq 1 ] || [ -z "$owner" ]; then
+    local_image="localhost/paddlefish-dev-${variant}:latest"
+    image="$local_image"
+else
+    image="ghcr.io/${owner}/paddlefish-dev-${variant}:latest"
+fi
+
+# Shown as the container hostname (and in the fish prompt). Sanitize to a valid
+# hostname: keep [A-Za-z0-9-], collapse runs of '-', cap at 63 chars, trim ends.
+hostname=$(basename -- "$project" \
+    | sed -e 's/[^A-Za-z0-9-]/-/g' -e 's/-\{2,\}/-/g' \
+    | cut -c1-63 \
+    | sed -e 's/^-//' -e 's/-$//')
+[ -n "$hostname" ] || hostname="dev"
+
+# Bump when the container's create-time configuration changes so existing
+# instances are recreated automatically.
+ports_sig=""
+for p in "${ports[@]}"; do ports_sig+="${p},"; done
+sig_version=3
+signature="v=${sig_version};variant=${variant};gui=${gui};gpu=${gpu};net=${net};ports=${ports_sig};podman=${with_podman};path=${project}"
+
+cleanup() {
+    echo "Removing development container for ${project}"
+    podman rm -f "$name" >/dev/null 2>&1 || true
+    podman rm -f "$sidecar" >/dev/null 2>&1 || true
+    podman volume rm "$podman_storage_vol" "$podman_run_vol" >/dev/null 2>&1 || true
+    echo "Done."
+}
+
+if [ "$clean_cache" -eq 1 ]; then
+    echo "Removing shared cache volumes (used by ALL projects)"
+    podman volume rm "${cache_names[@]}" >/dev/null 2>&1 || true
+    echo "Done."
+fi
+
+if [ "$clean" -eq 1 ] || [ "$clean_cache" -eq 1 ]; then
+    [ "$clean" -eq 1 ] && cleanup
+    exit 0
+fi
+
+# Obtain the image: --local (or --build) builds from source; otherwise pull
+# the prebuilt image from the registry.
+if [ "$local" -eq 1 ] || [ -z "$owner" ]; then
+    if [ "$do_build" -eq 1 ] || ! podman image exists "$image"; then
+        "$repo_dir/scripts/dev/build.sh" "$variant"
+    fi
+else
+    echo "Pulling ${image}"
+    podman pull "$image"
+fi
+
+# Recreate the container when requested or when its run configuration changed.
+if podman container exists "$name"; then
+    existing_sig=$(podman inspect -f '{{ index .Config.Labels "paddlefish.signature" }}' "$name" 2>/dev/null || true)
+    if [ "$recreate" -eq 1 ] || [ "$existing_sig" != "$signature" ]; then
+        podman rm -f "$name" >/dev/null 2>&1 || true
+    fi
+fi
+
+# Per-project podman sidecar.
+if [ "$with_podman" -eq 1 ]; then
+    if ! podman container exists "$sidecar"; then
+        podman run -d --name "$sidecar" \
+            --entrypoint /bin/sh \
+            --privileged --security-opt label=disable \
+            --device /dev/fuse \
+            --volume "${podman_storage_vol}:/var/lib/containers/storage" \
+            --volume "${podman_run_vol}:/run/podman" \
+            --volume "${project}:/workspace" \
+            "$image" -c '
+                podman --cgroup-manager=cgroupfs system service --time=0 unix:///run/podman/podman.sock &
+                i=0
+                while [ ! -S /run/podman/podman.sock ] && [ $i -lt 100 ]; do
+                    sleep 0.1; i=$((i + 1))
+                done
+                chmod 666 /run/podman/podman.sock 2>/dev/null || true
+                wait
+            ' >/dev/null
+    else
+        podman start "$sidecar" >/dev/null 2>&1 || true
+    fi
+fi
+
+if ! podman container exists "$name"; then
+    run_args=(
+        --detach
+        --name "$name"
+        --userns=keep-id:uid=1000,gid=1000
+        --user dev
+        --hostname "$hostname"
+        --workdir /workspace
+        --volume "${project}:/workspace"
+        --security-opt label=disable
+        --env "HOME=/home/dev"
+        --env "TERM=${TERM:-xterm-256color}"
+        --env "COLORTERM=${COLORTERM:-truecolor}"
+        --label "paddlefish.signature=${signature}"
+    )
+
+    # Shared package caches (persist across containers, reused by all projects).
+    for i in "${!cache_names[@]}"; do
+        run_args+=(--volume "${cache_names[$i]}:${cache_dests[$i]}")
+    done
+
+    if [ "$net" = "host" ]; then
+        run_args+=(--network host)
+    else
+        for p in "${ports[@]}"; do
+            run_args+=(--publish "$p")
+        done
+    fi
+
+    if [ "$gui" -eq 1 ] || [ -n "$gpu" ]; then
+        runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+        if [ -d "$runtime_dir" ]; then
+            run_args+=(--volume "${runtime_dir}:${runtime_dir}")
+        fi
+        run_args+=(
+            --env "XDG_RUNTIME_DIR=${runtime_dir}"
+            --env "WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0}"
+            --env "MOZ_ENABLE_WAYLAND=1"
+            --env "GTK_THEME=Adwaita:dark"
+            --env "QT_QPA_PLATFORMTHEME=gtk3"
+        )
+        if [ -S "${runtime_dir}/bus" ]; then
+            run_args+=(--env "DBUS_SESSION_BUS_ADDRESS=unix:path=${runtime_dir}/bus")
+        fi
+        if [ -S "${runtime_dir}/pulse/native" ]; then
+            run_args+=(--env "PULSE_SERVER=unix:${runtime_dir}/pulse/native")
+        fi
+        # X11 / XWayland (niri runs xwayland-satellite on the host).
+        if [ -d /tmp/.X11-unix ]; then
+            run_args+=(--volume /tmp/.X11-unix:/tmp/.X11-unix)
+        fi
+        run_args+=(--env "DISPLAY=${DISPLAY:-:0}")
+        if [ -n "${XAUTHORITY:-}" ] && [ -e "${XAUTHORITY}" ]; then
+            run_args+=(--volume "${XAUTHORITY}:${XAUTHORITY}" --env "XAUTHORITY=${XAUTHORITY}")
+        fi
+    fi
+
+    case "$gpu" in
+        amd)
+            run_args+=(--device /dev/dri --group-add keep-groups)
+            ;;
+        nvidia)
+            run_args+=(--device nvidia.com/gpu=all)
+            ;;
+    esac
+
+    if [ "$with_podman" -eq 1 ]; then
+        run_args+=(
+            --volume "${podman_run_vol}:/run/podman"
+            --env "CONTAINER_HOST=unix:///run/podman/podman.sock"
+        )
+    fi
+
+    podman run "${run_args[@]}" "$image" sleep infinity >/dev/null
+else
+    podman start "$name" >/dev/null 2>&1 || true
+fi
+
+if [ "${#run_cmd[@]}" -gt 0 ]; then
+    exec podman exec -it -w /workspace "$name" "${run_cmd[@]}"
+else
+    exec podman exec -it -w /workspace "$name" /usr/bin/fish -l
+fi
