@@ -37,10 +37,10 @@ jobs:
             build_desktop: "N"
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -78,7 +78,7 @@ jobs:
     # The nvidia variant installs the CUDA toolkit and is very large/slow.
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Free disk space
         run: |
@@ -87,7 +87,7 @@ jobs:
           sudo apt-get clean
 
       - name: Login to GHCR
-        uses: docker/login-action@v3
+        uses: docker/login-action@v3.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
