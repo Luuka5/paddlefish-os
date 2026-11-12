@@ -10,8 +10,8 @@ FROM ${AKMODS_NVIDIA_IMAGE} AS akmods_nvidia
 FROM ${BASE_IMAGE} AS shikane_builder
 
 RUN dnf5 install -y cargo && \
-    cargo install --locked --root /out shikane && \
-    rm -rf /root/.cargo /var/cache/dnf /var/cache/libdnf5
+    CARGO_HOME=/tmp/cargo cargo install --locked --root /out shikane && \
+    rm -rf /tmp/cargo /var/cache/dnf /var/cache/libdnf5
 
 FROM ${BASE_IMAGE}
 
