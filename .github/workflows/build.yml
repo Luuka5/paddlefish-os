@@ -55,6 +55,7 @@ jobs:
           podman build \
             --build-arg "FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}" \
             --build-arg "BASE_IMAGE=${{ matrix.base_image }}" \
+            --build-arg "AKMODS_NVIDIA_IMAGE=${{ matrix.akmods_nvidia_image }}" \
             --build-arg "IMAGE_NAME=${{ matrix.variant }}" \
             --build-arg "BUILD_NVIDIA=${{ matrix.build_nvidia }}" \
             --build-arg "BUILD_DESKTOP=${{ matrix.build_desktop }}" \
