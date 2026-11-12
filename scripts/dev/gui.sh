@@ -22,7 +22,6 @@ dnf5 install -y \
     mesa-libGL \
     mesa-libEGL \
     mesa-libgbm \
-    mesa-libglapi \
     libglvnd \
     libglvnd-egl \
     libglvnd-gles \
