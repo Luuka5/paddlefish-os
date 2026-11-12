@@ -8,7 +8,7 @@ set -euo pipefail
 #
 # FEDORA_MAJOR_VERSION is passed in from the build so the repo matches the base
 # image; the authoritative NVIDIA .repo file is fetched for that major.
-FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-44}"
+FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-45}"
 cuda_repo="https://developer.download.nvidia.com/compute/cuda/repos/fedora${FEDORA_MAJOR_VERSION}/x86_64"
 
 # Fetch NVIDIA's own repo file for this Fedora major instead of hardcoding it
