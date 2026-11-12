@@ -7,6 +7,12 @@ ARG BUILD_DESKTOP=Y
 
 FROM ${AKMODS_NVIDIA_IMAGE} AS akmods_nvidia
 
+FROM ${BASE_IMAGE} AS shikane_builder
+
+RUN dnf5 install -y cargo && \
+    cargo install --locked --root /out shikane && \
+    rm -rf /root/.cargo /var/cache/dnf /var/cache/libdnf5
+
 FROM ${BASE_IMAGE}
 
 # Re-declare so these are available inside RUN instructions of this stage.
@@ -30,6 +36,8 @@ RUN /tmp/scripts/base.sh
 
 COPY system_files/${IMAGE_NAME}/ /
 COPY scripts/ /tmp/scripts/
+COPY --from=shikane_builder /out/bin/shikane /usr/local/bin/shikane
+COPY --from=shikane_builder /out/bin/shikanectl /usr/local/bin/shikanectl
 
 RUN /tmp/scripts/nvim-plugins.sh
 

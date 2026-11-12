@@ -2,7 +2,6 @@
 set -euo pipefail
 
 dnf5 copr enable -y yalter/niri
-dnf5 copr enable -y sand-head/packages
 
 dnf5 install -y \
     niri \
@@ -23,8 +22,7 @@ dnf5 install -y \
     pipewire-pulse \
     wireplumber \
     wdisplays \
-    xwayland-satellite \
-    shikane
+    xwayland-satellite
 
 dnf5 clean all
 
