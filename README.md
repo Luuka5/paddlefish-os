@@ -9,7 +9,7 @@ builds container images; it ships no installer or install media.
 |---------|------|-------|
 | `desktop` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop (no NVIDIA) |
 | `desktop-nvidia` | `ghcr.io/ublue-os/base-main:latest` | graphical desktop, NVIDIA drivers |
-| `server` | `quay.io/fedora/fedora-bootc:44` | headless, minimal tools |
+| `server` | `quay.io/fedora/fedora-bootc:45` | headless, minimal tools |
 
 ## Build
 
