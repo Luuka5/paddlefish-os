@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  FEDORA_MAJOR_VERSION: "44"
+  FEDORA_MAJOR_VERSION: "45"
 
 permissions:
   contents: read
@@ -34,8 +34,8 @@ jobs:
             build_nvidia: "Y"
             build_desktop: "Y"
           - variant: server
-            base_image: quay.io/fedora/fedora-bootc:44
-            akmods_nvidia_image: ghcr.io/ublue-os/akmods-nvidia-open:main-44
+            base_image: quay.io/fedora/fedora-bootc:45
+            akmods_nvidia_image: ghcr.io/ublue-os/akmods-nvidia-open:main-45
             build_nvidia: "N"
             build_desktop: "N"
     timeout-minutes: 60
