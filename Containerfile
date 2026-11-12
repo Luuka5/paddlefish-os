@@ -1,4 +1,4 @@
-ARG FEDORA_MAJOR_VERSION=44
+ARG FEDORA_MAJOR_VERSION=45
 ARG AKMODS_NVIDIA_IMAGE=ghcr.io/ublue-os/akmods-nvidia-open:main-${FEDORA_MAJOR_VERSION}
 ARG BASE_IMAGE=ghcr.io/ublue-os/base-main:latest
 ARG IMAGE_NAME=desktop
