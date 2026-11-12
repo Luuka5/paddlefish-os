@@ -1,7 +1,7 @@
 #!/bin/sh
 set -euo pipefail
 
-FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-44}"
+FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-45}"
 
 build_variant() {
     local name=$1 base=$2 nvidia=$3 desktop=$4
