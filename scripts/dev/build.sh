@@ -11,7 +11,7 @@ set -euo pipefail
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 root=$(CDPATH= cd -- "${here}/../.." && pwd)
 
-FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-44}"
+FEDORA_MAJOR_VERSION="${FEDORA_MAJOR_VERSION:-45}"
 BASE_IMAGE="${BASE_IMAGE:-registry.fedoraproject.org/fedora:${FEDORA_MAJOR_VERSION}}"
 
 build_variant() {
