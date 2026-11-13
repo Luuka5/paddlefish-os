@@ -39,6 +39,15 @@ COPY scripts/ /tmp/scripts/
 COPY --from=shikane_builder /out/bin/shikane /usr/local/bin/shikane
 COPY --from=shikane_builder /out/bin/shikanectl /usr/local/bin/shikanectl
 
+# User presets are policy, not enablement: apply Shikane's target link at
+# image build time so it works for users created by installers as well as
+# users created by first boot.
+RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then \
+        install -d /etc/systemd/user/graphical-session.target.wants && \
+        ln -s /usr/lib/systemd/user/shikane.service \
+            /etc/systemd/user/graphical-session.target.wants/shikane.service; \
+    fi
+
 RUN /tmp/scripts/nvim-plugins.sh
 
 RUN if [ "${BUILD_DESKTOP}" = "Y" ]; then /tmp/scripts/niri.sh; fi

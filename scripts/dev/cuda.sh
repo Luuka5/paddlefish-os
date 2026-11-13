@@ -17,8 +17,18 @@ curl -fsSL -o /etc/yum.repos.d/cuda-fedora.repo \
     "${cuda_repo}/cuda-fedora${FEDORA_MAJOR_VERSION}.repo"
 
 # Toolkit only. Installing the `cuda` meta instead would also pull the driver
-# bundle, which must come from the host.
-dnf5 install -y cuda-toolkit
+# bundle, which must come from the host. NVIDIA no longer publishes the
+# unversioned package name for every Fedora release, so resolve the latest
+# versioned toolkit package when the alias is unavailable.
+if ! dnf5 install -y cuda-toolkit; then
+    cuda_toolkit="$(dnf5 repoquery --available --latest-limit=1 \
+        --qf '%{name}' 'cuda-toolkit-[0-9]*' | sed -n '1p')"
+    if [ -z "${cuda_toolkit}" ]; then
+        echo "No versioned CUDA toolkit package is available" >&2
+        exit 1
+    fi
+    dnf5 install -y "${cuda_toolkit}"
+fi
 
 dnf5 clean all
 
