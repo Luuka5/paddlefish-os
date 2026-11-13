@@ -5,7 +5,7 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/shikane
+ExecStart=/usr/local/bin/shikane
 Restart=on-failure
 RestartSec=3
 
