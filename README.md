@@ -106,11 +106,13 @@ wl-clipboard, podman client) is unified with the server image via
 Each image includes: Node.js + npm + pnpm + bun + TypeScript + Tailwind CLI,
 Rust via rustup (with clang + mold and the Bevy Linux build deps), Go + gopls,
 a C/C++ toolchain (gcc, clang, clangd, cmake, ninja, gdb/lldb), and pinned
-`opencode` and `pi` coding agents. The nvidia variant adds `cuda-toolkit`. The
-Neovim config is fuller than the base OS: it bootstraps lazy.nvim and Mason and
-installs LSP servers, and uses the `habamax` colorscheme with true color (the
-base OS keeps the terminal's srcery palette). All config is baked into the
-image's `/home/dev`; there is no per-project home volume and no seeding.
+`opencode` and `pi` coding agents plus the Paseo CLI/daemon. The nvidia variant
+adds `cuda-toolkit`. Paseo is only installed; starting it and exposing its
+daemon or web UI is left to the user. The Neovim config is fuller than the base
+OS: it bootstraps lazy.nvim and Mason and installs LSP servers, and uses the
+`habamax` colorscheme with true color (the base OS keeps the terminal's srcery
+palette). All config is baked into the image's `/home/dev`; there is no
+per-project home volume and no seeding.
 
 ### Run
 
