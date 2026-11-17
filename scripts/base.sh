@@ -8,6 +8,7 @@ dnf5 install -y \
     neovim \
     fish \
     htop \
+    procps-ng \
     curl \
     wget \
     unzip \
