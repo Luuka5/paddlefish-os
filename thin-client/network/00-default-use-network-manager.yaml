@@ -1,0 +1,12 @@
+# Installed by the Paddlefish thin-client installer.
+#
+# Armbian minimal images use Netplan with the systemd-networkd renderer.
+# This drop-in hands network management to NetworkManager so nmtui can
+# configure Wi-Fi on the Zero 3W.
+#
+# Based on Armbian configng's desktop networking transition:
+# https://github.com/armbian/configng/blob/main/tools/modules/desktops/networking/netplan/00-default-use-network-manager.yaml
+
+network:
+  version: 2
+  renderer: NetworkManager
