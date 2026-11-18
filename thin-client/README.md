@@ -1,8 +1,9 @@
 # Paddlefish thin client
 
 An isolated experiment for turning an Orange Pi Zero 3W into a thin client:
-Armbian boots to a minimal niri Wayland session, and the real development work
-happens over SSH on a separate host running the published Paddlefish dev images.
+Armbian boots to a minimal CLI login, niri is started manually, and the real
+development work happens over SSH on a separate host running the published
+Paddlefish dev images.
 
 ## Isolation contract
 
@@ -65,44 +66,51 @@ USB-C display notes:
 5. Run the installer locally on tty1:
    `cd ~/thin-client && sudo ./install.sh`
 6. Reboot, connect the monitor before power, and log in on tty1 again.
+7. Start niri manually with `niri`.
 
 The first run downloads and builds niri on the board. Expect roughly 15–40
 minutes depending on storage and network speed, and keep several GB free.
 Running the installer again is safe and skips the niri build if it already
 succeeded.
 
-Do not run the network transition over SSH if you can avoid it. `netplan apply`
-can briefly drop connectivity; the installer continues locally.
+The installer does not edit Netplan, reconfigure `systemd-networkd`, or invoke
+`systemctl` for NetworkManager. Existing network configuration is left alone.
 
 ## What the installer does
 
 - Installs a minimal Wayland desktop package set: `foot`, `fuzzel`,
-  `firefox-esr`, PipeWire/WirePlumber, `pavucontrol`, NetworkManager, Netplan,
-  fonts, portals, and OpenSSH client.
+  `firefox-esr`, PipeWire/WirePlumber, `pavucontrol`, NetworkManager, fonts,
+  portals, OpenSSH client, and the Mesa/XCB runtime libraries niri loads.
 - Installs `wpasupplicant` explicitly because the installer does not pull
   package recommendations.
-- Switches Armbian's Netplan renderer from `systemd-networkd` to
-  `NetworkManager` so `nmtui` and `nmcli` manage Wi-Fi. The old
-  `10-dhcp-all-interfaces.yaml` file is renamed with a
-  `.paddlefish-disabled` suffix.
+- Keeps NetworkManager available for `nmtui` and `nmcli`, but does not invoke
+  `systemctl` or Netplan to start, enable, disable, or reconfigure networking.
 - Builds niri v26.04 from pinned source and pinned vendored dependencies,
-  verifying both SHA-256 checksums. niri is installed directly from the built
-  artifacts, without `cargo-deb` and without pulling the unused `alacritty`
-  dependency declared in niri's Debian metadata.
+  verifying both SHA-256 checksums. The build embeds the pinned commit.
+- Verifies niri's runtime libraries with `ldconfig` and `ldd` after installation,
+  and reports the Debian package that provides any missing library.
+- Installs niri directly from the built artifacts, without `cargo-deb` and
+  without pulling the unused `alacritty` dependency declared in niri's Debian
+  metadata.
 - Installs the copied niri, foot, fuzzel, and GTK configuration into
   `/etc/skel` and the current human user's home directory.
-- Installs a guarded `/etc/profile.d` hook that starts niri after a manual login
-  on tty1.
 - Enables the PipeWire, PipeWire-Pulse, and WirePlumber user units globally.
 - Creates `~/Pictures/Screenshots` for the screenshot bind.
 
-There is no greetd, no autologin, no display manager, no Waybar, no notification
-daemon, no screen locker, no Fish configuration, and no Neovim configuration.
-Login stays manual on tty1; exiting niri logs the user out.
+There is no greetd, no autologin, no display manager, no auto-launch hook, no
+Waybar, no notification daemon, no screen locker, no Fish configuration, and no
+Neovim configuration. Login stays manual on tty1; run `niri` when ready.
 
 ## Using the session
 
-After login on tty1, niri starts automatically.
+After login on tty1, start niri manually:
+
+```sh
+niri
+```
+
+Use `niri-session` instead if you want niri to run through the installed systemd
+user units.
 
 - `Super+T` or `Super+Return`: open foot
 - `Super+D` or `Super+Space`: open fuzzel
@@ -165,26 +173,26 @@ niri did not start after login:
 ```sh
 tty
 id -u
-ls -l /etc/profile.d/paddlefish-niri.sh /usr/libexec/paddlefish/niri-session
-journalctl --user -u niri -b
+niri --version
 niri validate --config ~/.config/niri/config.kdl
+journalctl --user -u niri -b
+ldd /usr/lib/aarch64-linux-gnu/libEGL_mesa.so.0 | grep 'not found'
+ldd /usr/bin/niri | grep 'not found'
 ```
 
-The auto-launch hook only runs for a real interactive tty1 login as a non-root
-user. It deliberately does not run over SSH.
-
-No network after the Netplan switch:
+If niri panics while loading LibEGL with `libxcb-dri2.so.0`, install the missing
+provider:
 
 ```sh
-nmcli device status
-systemctl status NetworkManager
-sudo netplan generate
-sudo netplan apply
+sudo apt-get install libxcb-dri2-0
 ```
 
-If the switch failed, restore the renamed
-`/etc/netplan/10-dhcp-all-interfaces.yaml.paddlefish-disabled`, remove
-`/etc/netplan/00-default-use-network-manager.yaml`, and reapply Netplan.
+The same pattern applies to any other `not found` line. `dpkg -S` finds the
+provider for installed files; Debian package search finds it for missing ones.
+
+Run `niri` from a text console as the regular user. Do not use `su` to start it,
+because the user session and environment may be incomplete. X11 applications
+are not supported because XWayland is not installed.
 
 No audio:
 
@@ -196,6 +204,23 @@ pavucontrol
 
 Firefox does not open from the `Super+E` bind: check `command -v firefox`.
 Debian's `firefox-esr` package provides the `/usr/bin/firefox` wrapper.
+
+## Uninstall
+
+The uninstall script removes installed files by default. It keeps packages and
+user configuration unless asked otherwise.
+
+```sh
+sudo ./uninstall.sh --dry-run
+sudo ./uninstall.sh
+sudo ./uninstall.sh --purge-configs
+sudo ./uninstall.sh --clean-temp
+sudo ./uninstall.sh --list-packages
+```
+
+`--purge-configs` removes the copied niri, foot, fuzzel, and GTK configuration
+from `/etc/skel` and the selected user's home. `--list-packages` only prints
+review hints; package removal is intentionally manual.
 
 ## Maintaining the copies
 

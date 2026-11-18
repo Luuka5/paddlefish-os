@@ -25,9 +25,35 @@ readonly APT_PACKAGES=(
     fonts-dejavu-core
     fontconfig
     libgl1-mesa-dri
+    libegl1
+    libegl-mesa0
+    libgbm1
+    libxcb-dri2-0
+    libxcb-dri3-0
+    libxcb-present0
+    libxcb-randr0
+    libxcb-shm0
+    libxcb-sync1
+    libxcb-xfixes0
+    libxcb1
+    libx11-xcb1
+    libxshmfence1
+    libdisplay-info2
+    libseat1
+    libinput10
+    libxkbcommon0
+    libwayland-server0
+    libwayland-client0
+    libpixman-1-0
+    libcairo2
+    libpango-1.0-0
+    libglib2.0-0t64
+    libpipewire-0.3-0
+    libdbus-1-3
+    libudev1
+    libdrm2
     bluez
     network-manager
-    netplan.io
     wpasupplicant
     wireless-regdb
     polkitd
@@ -142,7 +168,8 @@ enable_user_services() {
 }
 
 enable_bluetooth() {
-    systemctl enable --now bluetooth.service
+    log "Enabling Bluetooth service"
+    systemctl enable --now bluetooth.service || warn "could not enable Bluetooth service"
 }
 
 install_rust() {
@@ -175,42 +202,52 @@ verify_sha256() {
     [[ "$actual" == "$expected" ]] || die "checksum mismatch for $file: expected $expected, got $actual"
 }
 
-niri_installed() {
+niri_binary_installed() {
     [[ -x /usr/bin/niri ]] &&
+    [[ -f "${STATE_DIR}/niri-${NIRI_VERSION}" ]]
+}
+
+niri_files_installed() {
     [[ -x /usr/bin/niri-session ]] &&
     [[ -f /usr/lib/systemd/user/niri.service ]] &&
     [[ -f /usr/lib/systemd/user/niri-shutdown.target ]] &&
     [[ -f /usr/share/wayland-sessions/niri.desktop ]] &&
-    [[ -f /usr/share/xdg-desktop-portal/niri-portals.conf ]] &&
-    [[ -f "${STATE_DIR}/niri-${NIRI_VERSION}" ]]
+    [[ -f /usr/share/xdg-desktop-portal/niri-portals.conf ]]
 }
 
 install_niri() {
-    if niri_installed; then
+    if niri_binary_installed && niri_files_installed; then
         log "niri ${NIRI_VERSION} is already installed"
         return
     fi
 
-    install_build_packages
-    install_rust
+    local need_build=0
+    if ! niri_binary_installed; then
+        need_build=1
+        install_build_packages
+        install_rust
+    fi
 
     BUILD_DIR="$(mktemp -d /var/tmp/niri-build.XXXXXX)"
     local source_archive="${BUILD_DIR}/niri-source.tar.gz"
     local vendor_archive="${BUILD_DIR}/niri-vendor.tar.xz"
     local source_dir="${BUILD_DIR}/source"
 
-    log "Downloading niri ${NIRI_VERSION}"
+    log "Downloading niri ${NIRI_VERSION} source"
     download "$NIRI_SOURCE_URL" "$source_archive"
     verify_sha256 "$source_archive" "$NIRI_SOURCE_SHA256"
-    download "$NIRI_VENDOR_URL" "$vendor_archive"
-    verify_sha256 "$vendor_archive" "$NIRI_VENDOR_SHA256"
 
     mkdir -p "$source_dir"
     tar -xzf "$source_archive" -C "$source_dir" --strip-components=1
-    tar -xJf "$vendor_archive" -C "$source_dir"
 
-    mkdir -p "$source_dir/.cargo"
-    cat > "$source_dir/.cargo/config.toml" <<EOF
+    if (( need_build )); then
+        log "Downloading niri ${NIRI_VERSION} vendored dependencies"
+        download "$NIRI_VENDOR_URL" "$vendor_archive"
+        verify_sha256 "$vendor_archive" "$NIRI_VENDOR_SHA256"
+        tar -xJf "$vendor_archive" -C "$source_dir"
+
+        mkdir -p "$source_dir/.cargo"
+        cat > "$source_dir/.cargo/config.toml" <<EOF
 [source.crates-io]
 replace-with = "vendored-sources"
 
@@ -223,11 +260,12 @@ replace-with = "vendored-sources"
 directory = "vendor"
 EOF
 
-    log "Building niri ${NIRI_VERSION} (${NIRI_COMMIT:0:12}); this can take a while"
-    (
-        cd "$source_dir"
-        cargo build --release --frozen -p niri
-    )
+        log "Building niri ${NIRI_VERSION} (${NIRI_COMMIT:0:12}); this can take a while"
+        (
+            cd "$source_dir"
+            NIRI_BUILD_COMMIT="$NIRI_COMMIT" cargo build --release --frozen -p niri
+        )
+    fi
 
     install -d -m 0755 \
         /usr/bin \
@@ -235,15 +273,81 @@ EOF
         /usr/share/xdg-desktop-portal \
         /usr/lib/systemd/user
 
-    install -m 0755 "$source_dir/target/release/niri" /usr/bin/niri
+    if (( need_build )); then
+        install -m 0755 "$source_dir/target/release/niri" /usr/bin/niri
+        printf '%s\n' "$NIRI_COMMIT" > "${STATE_DIR}/niri-${NIRI_VERSION}"
+    fi
+
     install -m 0755 "$source_dir/resources/niri-session" /usr/bin/niri-session
     install -m 0644 "$source_dir/resources/niri.desktop" /usr/share/wayland-sessions/niri.desktop
     install -m 0644 "$source_dir/resources/niri-portals.conf" /usr/share/xdg-desktop-portal/niri-portals.conf
     install -m 0644 "$source_dir/resources/niri.service" /usr/lib/systemd/user/niri.service
     install -m 0644 "$source_dir/resources/niri-shutdown.target" /usr/lib/systemd/user/niri-shutdown.target
 
-    printf '%s\n' "$NIRI_COMMIT" > "${STATE_DIR}/niri-${NIRI_VERSION}"
     log "Installed niri ${NIRI_VERSION}"
+}
+
+find_library() {
+    ldconfig -p | awk -v name="$1" '$1 == name { print $NF; exit }'
+}
+
+verify_runtime_dependencies() {
+    local -A lib_packages=(
+        [libEGL.so.1]=libegl1
+        [libEGL_mesa.so.0]=libegl-mesa0
+        [libxcb-dri2.so.0]=libxcb-dri2-0
+        [libwayland-server.so.0]=libwayland-server0
+        [libwayland-client.so.0]=libwayland-client0
+        [libseat.so.1]=libseat1
+        [libdisplay-info.so.2]=libdisplay-info2
+        [libgbm.so.1]=libgbm1
+        [libinput.so.10]=libinput10
+        [libxkbcommon.so.0]=libxkbcommon0
+        [libpipewire-0.3.so.0]=libpipewire-0.3-0
+        [libpixman-1.so.0]=libpixman-1-0
+        [libpango-1.0.so.0]=libpango-1.0-0
+        [libcairo.so.2]=libcairo2
+        [libglib-2.0.so.0]=libglib2.0-0t64
+        [libdbus-1.so.3]=libdbus-1-3
+        [libudev.so.1]=libudev1
+        [libdrm.so.2]=libdrm2
+    )
+    local -A missing_packages=()
+    local lib path dep
+    local missing=0
+
+    log "Verifying niri runtime dependencies"
+
+    for lib in "${!lib_packages[@]}"; do
+        path="$(find_library "$lib")"
+        if [[ -z "$path" ]]; then
+            warn "missing runtime library: $lib (package: ${lib_packages[$lib]})"
+            missing_packages["${lib_packages[$lib]}"]=1
+            missing=1
+            continue
+        fi
+
+        while IFS= read -r dep; do
+            [[ -n "$dep" ]] || continue
+            warn "missing dependency of ${path}: $dep"
+            missing=1
+        done < <(ldd "$path" 2>/dev/null | awk '/not found/ { print $1 }')
+    done
+
+    while IFS= read -r dep; do
+        [[ -n "$dep" ]] || continue
+        warn "missing dependency of /usr/bin/niri: $dep"
+        missing=1
+    done < <(ldd /usr/bin/niri 2>/dev/null | awk '/not found/ { print $1 }')
+
+    if (( missing )); then
+        if ((${#missing_packages[@]})); then
+            warn "install these packages: ${!missing_packages[*]}"
+        fi
+        die "runtime dependency check failed"
+    fi
+
+    log "Runtime dependency check passed"
 }
 
 validate_config() {
@@ -278,9 +382,6 @@ install_configs() {
     copy_config "${SCRIPT_DIR}/config/gtk-3.0/settings.ini" /etc/skel/.config/gtk-3.0/settings.ini
     copy_config "${SCRIPT_DIR}/config/gtk-4.0/settings.ini" /etc/skel/.config/gtk-4.0/settings.ini
 
-    copy_config "${SCRIPT_DIR}/session/niri-session" /usr/libexec/paddlefish/niri-session root root 0755
-    copy_config "${SCRIPT_DIR}/session/paddlefish-niri.sh" /etc/profile.d/paddlefish-niri.sh root root 0644
-
     if [[ -n "${TARGET_USER}" && -n "${TARGET_HOME}" && -d "${TARGET_HOME}" ]]; then
         local dir
         install -d -m 0755 -o "$TARGET_USER" -g "$TARGET_GROUP" "${TARGET_HOME}/.config"
@@ -299,36 +400,6 @@ install_configs() {
     else
         warn "no regular user found; only /etc/skel was populated"
     fi
-}
-
-configure_network() {
-    if [[ -f "${STATE_DIR}/netplan-networkmanager" && -f /etc/netplan/00-default-use-network-manager.yaml ]]; then
-        log "Netplan is already using NetworkManager"
-        return
-    fi
-
-    log "Switching Netplan to the NetworkManager renderer"
-    install -d -m 0755 /etc/netplan
-
-    if [[ -f /etc/netplan/10-dhcp-all-interfaces.yaml ]]; then
-        mv /etc/netplan/10-dhcp-all-interfaces.yaml /etc/netplan/10-dhcp-all-interfaces.yaml.paddlefish-disabled
-    fi
-
-    install -m 0600 "${SCRIPT_DIR}/network/00-default-use-network-manager.yaml" /etc/netplan/00-default-use-network-manager.yaml
-
-    systemctl enable --now NetworkManager.service
-    systemctl disable --now NetworkManager-wait-online.service 2>/dev/null || true
-    systemctl enable systemd-resolved.service 2>/dev/null || true
-
-    if command -v systemd-detect-virt >/dev/null 2>&1 && systemd-detect-virt --container --quiet; then
-        warn "container detected; skipping netplan generate/apply"
-    else
-        log "Applying netplan; network connectivity may briefly drop"
-        netplan generate
-        netplan apply
-    fi
-
-    touch "${STATE_DIR}/netplan-networkmanager"
 }
 
 main() {
@@ -353,13 +424,15 @@ main() {
     enable_user_services
     enable_bluetooth
     install_niri
+    verify_runtime_dependencies
     validate_config
     install_configs
-    configure_network
 
     log "Done"
+    log "Network configuration was left untouched."
     log "Connect the USB-C monitor before rebooting, then log in on tty1."
-    log "niri starts automatically. Use Super+T for foot and Super+D for fuzzel."
+    log "Start niri manually with: niri"
+    log "Use Super+T for foot and Super+D for fuzzel."
 }
 
 main "$@"

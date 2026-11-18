@@ -15,16 +15,6 @@ and reviewed here, then recorded in this file.
 | `config/fuzzel/fuzzel.ini` | `system_files/all/etc/skel/.config/fuzzel/fuzzel.ini` | Adapted | Changed `font=FiraCode Nerd Font Mono:size=12` to `font=FiraCode:size=12`. Colors and layout unchanged. |
 | `config/gtk-3.0/settings.ini` | `system_files/all/etc/skel/.config/gtk-3.0/settings.ini` | Verbatim | Dark theme and Adwaita icon theme. |
 | `config/gtk-4.0/settings.ini` | `system_files/all/etc/skel/.config/gtk-4.0/settings.ini` | Verbatim | Dark theme preference. |
-| `session/niri-session` | `system_files/desktop/usr/libexec/paddlefish/niri-session` | Adapted | Changed the interpreter from `#!/bin/sh` to `#!/bin/bash` because the script uses `set -o pipefail`, which Debian's dash does not support. The exported environment and `exec /usr/bin/niri-session` are unchanged. |
-
-The `system_files/desktop-nvidia` copy of `niri-session` is byte-identical and
-was not used separately.
-
-## Copied from Armbian
-
-| Destination | Source | Status | Notes |
-| --- | --- | --- | --- |
-| `network/00-default-use-network-manager.yaml` | Armbian configng, `tools/modules/desktops/networking/netplan/00-default-use-network-manager.yaml` | Adapted | Kept `network.version: 2` and `renderer: NetworkManager`; rewrote the explanatory comments for this thin client. Source: `https://github.com/armbian/configng/blob/main/tools/modules/desktops/networking/netplan/00-default-use-network-manager.yaml` |
 
 ## Authored for this branch
 
@@ -32,7 +22,7 @@ was not used separately.
 | --- | --- |
 | `README.md` | Standalone build and usage instructions, including the isolation contract. |
 | `install.sh` | Idempotent installer for the Armbian image and Orange Pi Zero 3W. |
-| `session/paddlefish-niri.sh` | Guarded tty1 login hook that starts niri after a manual login. |
+| `uninstall.sh` | File-only uninstaller with opt-in config purge and temp cleanup. |
 | `COPIED.md` | This provenance record. |
 
 ## Review checklist for future copies
