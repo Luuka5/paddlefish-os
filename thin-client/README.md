@@ -87,13 +87,17 @@ The installer does not edit Netplan, reconfigure `systemd-networkd`, or invoke
   `systemctl` or Netplan to start, enable, disable, or reconfigure networking.
 - Builds niri v26.04 from pinned source and pinned vendored dependencies,
   verifying both SHA-256 checksums. The build embeds the pinned commit.
+- Builds and installs `nwg-displays` 0.5.0 from pinned source under
+  `/usr/local`, verifying its SHA-256 checksum. The trixie package is too old
+  to support niri output configuration.
 - Verifies niri's runtime libraries with `ldconfig` and `ldd` after installation,
   and reports the Debian package that provides any missing library.
 - Installs niri directly from the built artifacts, without `cargo-deb` and
   without pulling the unused `alacritty` dependency declared in niri's Debian
   metadata.
 - Installs the copied niri, foot, fuzzel, and GTK configuration into
-  `/etc/skel` and the current human user's home directory.
+  `/etc/skel` and the current human user's home directory. The niri config
+  includes `monitor.kdl`; an empty placeholder is created only when missing.
 - Enables the PipeWire, PipeWire-Pulse, and WirePlumber user units globally.
 - Creates `~/Pictures/Screenshots` for the screenshot bind.
 
@@ -120,6 +124,11 @@ user units.
 Wi-Fi and other network setup: run `nmtui` inside foot. Pair a Bluetooth
 keyboard or mouse with `bluetoothctl` inside foot. Audio: run `pavucontrol`, or
 use the volume keys managed by WirePlumber.
+
+To arrange monitors, run `nwg-displays` from fuzzel or foot. Apply the layout;
+nwg-displays writes `~/.config/niri/monitor.kdl` and reloads niri. The copied
+niri config already contains the matching `include "monitor.kdl"` line. Run it
+inside niri, not over SSH or from a bare tty.
 
 The copied niri configuration keeps the Paddlefish/Srcery colors, window and
 workspace navigation, screenshots, Firefox picture-in-picture rules, and volume
@@ -194,6 +203,18 @@ Run `niri` from a text console as the regular user. Do not use `su` to start it,
 because the user session and environment may be incomplete. X11 applications
 are not supported because XWayland is not installed.
 
+`nwg-displays` does not find the compositor or will not save:
+
+```sh
+command -v nwg-displays
+printf '%s\n' "$NIRI_SOCKET"
+niri validate --config ~/.config/niri/config.kdl
+```
+
+Run it inside a niri session. An empty `NIRI_SOCKET` means the process is not in
+niri, such as an SSH shell. If validation reports the include, confirm that
+`~/.config/niri/monitor.kdl` exists.
+
 No audio:
 
 ```sh
@@ -207,7 +228,8 @@ Debian's `firefox-esr` package provides the `/usr/bin/firefox` wrapper.
 
 ## Uninstall
 
-The uninstall script removes installed files by default. It keeps packages and
+The uninstall script removes installed files by default, including the
+source-installed `nwg-displays` files under `/usr/local`. It keeps packages and
 user configuration unless asked otherwise.
 
 ```sh
@@ -218,9 +240,10 @@ sudo ./uninstall.sh --clean-temp
 sudo ./uninstall.sh --list-packages
 ```
 
-`--purge-configs` removes the copied niri, foot, fuzzel, and GTK configuration
-from `/etc/skel` and the selected user's home. `--list-packages` only prints
-review hints; package removal is intentionally manual.
+`--purge-configs` removes the copied niri, foot, fuzzel, and GTK configuration,
+plus `monitor.kdl` and `~/.config/nwg-displays`, from `/etc/skel` and the
+selected user's home. `--list-packages` only prints review hints; package
+removal is intentionally manual.
 
 ## Maintaining the copies
 

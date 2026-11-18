@@ -28,13 +28,15 @@ usage() {
     cat <<'EOF'
 Usage: sudo ./uninstall.sh [options]
 
-Removes files installed by thin-client/install.sh. Packages and user
+Removes files installed by thin-client/install.sh, including the
+source-installed nwg-displays files under /usr/local. Packages and user
 configuration are kept unless explicitly requested.
 
 Options:
   --dry-run         Show what would be removed without changing anything
-  --purge-configs   Remove copied niri, foot, fuzzel, and GTK configs
-  --clean-temp      Remove leftover /var/tmp/niri-build.* directories
+  --purge-configs   Remove copied niri, foot, fuzzel, and GTK configs,
+                    monitor.kdl, and nwg-displays profiles
+  --clean-temp      Remove leftover niri and nwg-displays build directories
   --list-packages   Print package-review hints; does not remove packages
   --user USER       User whose niri service is stopped or whose configs are purged
   -h, --help        Show this help
@@ -78,6 +80,20 @@ remove_file() {
     run rm -f -- "$path"
 }
 
+remove_path() {
+    local path="$1"
+
+    [[ -e "$path" || -L "$path" ]] || return 0
+
+    if dpkg -S "$path" >/dev/null 2>&1; then
+        warn "skipping package-owned path: $path"
+        return 0
+    fi
+
+    log "Removing $path"
+    run rm -rf -- "$path"
+}
+
 remove_dir_if_empty() {
     local path="$1"
 
@@ -102,6 +118,27 @@ stop_niri_service() {
     fi
 
     timeout 5s systemctl --user --machine="${user}@.host" stop niri.service >/dev/null 2>&1 || true
+}
+
+remove_nwg_displays() {
+    local path
+
+    for path in \
+        /usr/local/bin/nwg-displays \
+        /usr/local/bin/nwg-displays-apply \
+        /usr/local/bin/nwg-displays-toggle-wallpapers \
+        /usr/local/share/applications/nwg-displays.desktop \
+        /usr/local/share/pixmaps/nwg-displays.svg \
+        /usr/local/share/licenses/nwg-displays \
+        /usr/local/share/doc/nwg-displays; do
+        remove_path "$path"
+    done
+
+    for path in \
+        /usr/local/lib/python*/dist-packages/nwg_displays* \
+        /usr/local/lib/python*/site-packages/nwg_displays*; do
+        remove_path "$path"
+    done
 }
 
 remove_system_files() {
@@ -132,7 +169,7 @@ remove_state() {
 remove_temp() {
     local path
 
-    for path in /var/tmp/niri-build.*; do
+    for path in /var/tmp/niri-build.* /var/tmp/nwg-displays-build.*; do
         [[ -e "$path" ]] || continue
         log "Removing temporary build directory $path"
         run rm -rf -- "$path"
@@ -154,12 +191,16 @@ purge_configs() {
 
         for rel in \
             .config/niri/config.kdl \
+            .config/niri/monitor.kdl \
+            .config/niri/monitor.kdl.bak \
             .config/foot/foot.ini \
             .config/fuzzel/fuzzel.ini \
             .config/gtk-3.0/settings.ini \
             .config/gtk-4.0/settings.ini; do
             remove_file "$root/$rel"
         done
+
+        remove_path "$root/.config/nwg-displays"
 
         for dir in \
             .config/niri \
@@ -179,8 +220,9 @@ purge_configs() {
 list_packages() {
     log "Packages are not removed automatically"
     cat <<'EOF'
-Review APT_PACKAGES and BUILD_PACKAGES in thin-client/install.sh before
-removing anything, because some packages may be used by the rest of the system.
+Review APT_PACKAGES, BUILD_PACKAGES, and NWG_BUILD_PACKAGES in
+thin-client/install.sh before removing anything, because some packages may be
+used by the rest of the system.
 
 Runtime packages most likely added by this installer:
   foot fuzzel firefox-esr fonts-firacode fonts-dejavu-core fontconfig
@@ -191,7 +233,11 @@ Runtime packages most likely added by this installer:
   libcairo2 libpango-1.0-0 libglib2.0-0t64 libpipewire-0.3-0 libdbus-1-3
   libudev1 libdrm2 bluez network-manager wpasupplicant wireless-regdb
   polkitd libpam-systemd pipewire pipewire-pulse wireplumber
-  xdg-desktop-portal xdg-desktop-portal-gtk
+  xdg-desktop-portal xdg-desktop-portal-gtk python3 python3-gi
+  gir1.2-gtk-3.0 gir1.2-gtklayershell-0.1 python3-i3ipc
+
+nwg-displays is installed from pinned source under /usr/local, not from APT.
+  Its files are removed by this script; build-only packages remain installed.
 EOF
 }
 
@@ -249,6 +295,7 @@ main() {
     fi
 
     remove_system_files
+    remove_nwg_displays
     remove_state
 
     if (( CLEAN_TEMP )); then

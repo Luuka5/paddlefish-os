@@ -10,6 +10,10 @@ readonly NIRI_VENDOR_URL="https://github.com/niri-wm/niri/releases/download/${NI
 readonly NIRI_VENDOR_SHA256="407c525cd78710e72455c48741756857ca47dc32910a42f82cd40992a34beed6"
 readonly SMITHAY_REV="ff5fa7df392cecfba049ffed55cdaa4e98a8e7ef"
 
+readonly NWG_DISPLAYS_VERSION="0.5.0"
+readonly NWG_DISPLAYS_URL="https://github.com/nwg-piotr/nwg-displays/archive/refs/tags/v${NWG_DISPLAYS_VERSION}.tar.gz"
+readonly NWG_DISPLAYS_SHA256="28dfe825e7a6a18df62d36aa1b6b7d232ab86b7f06f99994ad00c04e8b4ccfbc"
+
 readonly STATE_DIR="/var/lib/paddlefish-thin-client"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 readonly SCRIPT_DIR
@@ -65,6 +69,11 @@ readonly APT_PACKAGES=(
     dbus-user-session
     xdg-desktop-portal-gtk
     adwaita-icon-theme
+    python3
+    python3-gi
+    gir1.2-gtk-3.0
+    gir1.2-gtklayershell-0.1
+    python3-i3ipc
 )
 
 readonly BUILD_PACKAGES=(
@@ -92,6 +101,13 @@ readonly BUILD_PACKAGES=(
     libclang-dev
 )
 
+readonly NWG_BUILD_PACKAGES=(
+    python3-build
+    python3-installer
+    python3-setuptools
+    python3-wheel
+)
+
 export DEBIAN_FRONTEND=noninteractive
 export RUSTUP_HOME="/usr/local/rustup"
 export CARGO_HOME="/usr/local/cargo"
@@ -113,6 +129,9 @@ die() {
 cleanup() {
     if [[ -n "${BUILD_DIR:-}" ]]; then
         rm -rf "$BUILD_DIR"
+    fi
+    if [[ -n "${NWG_BUILD_DIR:-}" ]]; then
+        rm -rf "$NWG_BUILD_DIR"
     fi
 }
 
@@ -350,6 +369,51 @@ verify_runtime_dependencies() {
     log "Runtime dependency check passed"
 }
 
+nwg_displays_installed() {
+    [[ -x /usr/local/bin/nwg-displays ]] &&
+    [[ -f "${STATE_DIR}/nwg-displays-${NWG_DISPLAYS_VERSION}" ]]
+}
+
+install_nwg_displays() {
+    if nwg_displays_installed; then
+        log "nwg-displays ${NWG_DISPLAYS_VERSION} is already installed"
+        return
+    fi
+
+    log "Installing nwg-displays build packages"
+    apt-get install -y --no-install-recommends "${NWG_BUILD_PACKAGES[@]}"
+    apt-get clean
+
+    NWG_BUILD_DIR="$(mktemp -d /var/tmp/nwg-displays-build.XXXXXX)"
+    local source_archive="${NWG_BUILD_DIR}/nwg-displays.tar.gz"
+    local source_dir="${NWG_BUILD_DIR}/source"
+
+    log "Downloading nwg-displays ${NWG_DISPLAYS_VERSION}"
+    download "$NWG_DISPLAYS_URL" "$source_archive"
+    verify_sha256 "$source_archive" "$NWG_DISPLAYS_SHA256"
+
+    mkdir -p "$source_dir"
+    tar -xzf "$source_archive" -C "$source_dir" --strip-components=1
+
+    log "Building nwg-displays ${NWG_DISPLAYS_VERSION}"
+    (
+        cd "$source_dir"
+        python3 -m build --wheel --no-isolation
+    )
+
+    log "Installing nwg-displays ${NWG_DISPLAYS_VERSION} to /usr/local"
+    python3 -m installer --prefix=/usr/local "$source_dir"/dist/*.whl
+    install -D -m 0644 "$source_dir/nwg-displays.desktop" /usr/local/share/applications/nwg-displays.desktop
+    install -D -m 0644 "$source_dir/nwg-displays.svg" /usr/local/share/pixmaps/nwg-displays.svg
+    install -D -m 0644 "$source_dir/LICENSE" /usr/local/share/licenses/nwg-displays/LICENSE
+    install -D -m 0644 "$source_dir/README.md" /usr/local/share/doc/nwg-displays/README.md
+
+    [[ -x /usr/local/bin/nwg-displays ]] || die "nwg-displays installation failed"
+
+    printf '%s\n' "$NWG_DISPLAYS_VERSION" > "${STATE_DIR}/nwg-displays-${NWG_DISPLAYS_VERSION}"
+    log "Installed nwg-displays ${NWG_DISPLAYS_VERSION}"
+}
+
 validate_config() {
     log "Validating the niri configuration"
     /usr/bin/niri validate --config "${SCRIPT_DIR}/config/niri/config.kdl"
@@ -362,6 +426,20 @@ copy_config() {
     local group="${4:-root}"
     local mode="${5:-0644}"
     install -D -m "$mode" -o "$owner" -g "$group" "$src" "$dest"
+}
+
+copy_config_if_missing() {
+    local src="$1"
+    local dest="$2"
+    local owner="${3:-root}"
+    local group="${4:-root}"
+    local mode="${5:-0644}"
+
+    if [[ -e "$dest" ]]; then
+        return 0
+    fi
+
+    copy_config "$src" "$dest" "$owner" "$group" "$mode"
 }
 
 detect_target_user() {
@@ -377,6 +455,7 @@ install_configs() {
     log "Installing desktop configuration"
 
     copy_config "${SCRIPT_DIR}/config/niri/config.kdl" /etc/skel/.config/niri/config.kdl
+    copy_config_if_missing "${SCRIPT_DIR}/config/niri/monitor.kdl" /etc/skel/.config/niri/monitor.kdl
     copy_config "${SCRIPT_DIR}/config/foot/foot.ini" /etc/skel/.config/foot/foot.ini
     copy_config "${SCRIPT_DIR}/config/fuzzel/fuzzel.ini" /etc/skel/.config/fuzzel/fuzzel.ini
     copy_config "${SCRIPT_DIR}/config/gtk-3.0/settings.ini" /etc/skel/.config/gtk-3.0/settings.ini
@@ -390,6 +469,7 @@ install_configs() {
         done
 
         copy_config "${SCRIPT_DIR}/config/niri/config.kdl" "${TARGET_HOME}/.config/niri/config.kdl" "$TARGET_USER" "$TARGET_GROUP"
+        copy_config_if_missing "${SCRIPT_DIR}/config/niri/monitor.kdl" "${TARGET_HOME}/.config/niri/monitor.kdl" "$TARGET_USER" "$TARGET_GROUP"
         copy_config "${SCRIPT_DIR}/config/foot/foot.ini" "${TARGET_HOME}/.config/foot/foot.ini" "$TARGET_USER" "$TARGET_GROUP"
         copy_config "${SCRIPT_DIR}/config/fuzzel/fuzzel.ini" "${TARGET_HOME}/.config/fuzzel/fuzzel.ini" "$TARGET_USER" "$TARGET_GROUP"
         copy_config "${SCRIPT_DIR}/config/gtk-3.0/settings.ini" "${TARGET_HOME}/.config/gtk-3.0/settings.ini" "$TARGET_USER" "$TARGET_GROUP"
@@ -424,6 +504,7 @@ main() {
     enable_user_services
     enable_bluetooth
     install_niri
+    install_nwg_displays
     verify_runtime_dependencies
     validate_config
     install_configs
@@ -433,6 +514,7 @@ main() {
     log "Connect the USB-C monitor before rebooting, then log in on tty1."
     log "Start niri manually with: niri"
     log "Use Super+T for foot and Super+D for fuzzel."
+    log "Run nwg-displays from fuzzel to arrange monitors."
 }
 
 main "$@"
